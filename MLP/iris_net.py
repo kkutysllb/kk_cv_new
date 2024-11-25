@@ -17,53 +17,35 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score
+from torch.utils.tensorboard import SummaryWriter
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
+np.random.seed(333)
 torch.random.manual_seed(333)
 
 class IrisNet(nn.Module):
     def __init__(self):
         super(IrisNet, self).__init__()
-        self.weight1 = nn.Parameter(torch.randn(4, 20))
-        self.bias1 = nn.Parameter(torch.zeros(1, 20))
-        self.weight2 = nn.Parameter(torch.randn(20, 10))
-        self.bias2 = nn.Parameter(torch.zeros(1, 10))
-        self.weight3 = nn.Parameter(torch.randn(10, 3))
-        self.bias3 = nn.Parameter(torch.zeros(1, 3))
-        self._init_weights()
+        self.kk_layer = nn.Sequential(
+            nn.Linear(4, 200),
+            nn.PReLU(),
+            nn.Linear(200, 100),
+            nn.PReLU(),
+            nn.Linear(100, 3)
+        )
         
-    def _init_weights(self):
-        for m in self.parameters():
-            nn.init.normal_(m)
+    # def _init_weights(self):
+    #     for m in self.parameters():
+    #         nn.init.normal_(m)
              
     def forward(self, x):
-        x = x @ self.weight1 + self.bias1
-        x = F.relu(x)
-        x = x @ self.weight2 + self.bias2
-        x = F.relu(x)
-        return x @ self.weight3 + self.bias3
-    
-    
-# class Accuracy(nn.Module):
-#     def __init__(self):
-#         super(Accuracy, self).__init__()
+        return self.kk_layer(x)
         
-#     def forward(self, y_pred, y):
-#         y_pred_dim = y_pred.dim()
-#         y_dim = y.dim()
-#         if y_pred_dim == y_dim:
-#             pass
-#         elif y_pred_dim == y_dim + 1:
-#             y_pred = y_pred.argmax(dim=-1)
-#         else:
-#             raise ValueError("y_pred and y must have the same dimension")
-#         y_pred = y_pred.to(y.dtype)
-#         correct = (y_pred.argmax(dim=-1) == y).float()
-#         return torch.mean(correct)  
     
+
 
 if __name__ == "__main__":
     df = pd.read_csv(os.path.join(parent_dir, 'data', 'iris.csv'))
@@ -75,10 +57,14 @@ if __name__ == "__main__":
     # 损失函数
     criterion = nn.CrossEntropyLoss()
     # 优化器
-    optimizer = optim.SGD(net.parameters(), lr=0.001)
+    optimizer = optim.SGD(net.parameters(), lr=0.0011)
+    
+    # 使用tensorboard记录训练过程
+    writer = SummaryWriter(os.path.join(parent_dir, 'runs', 'iris_net'))
+    writer.add_graph(net, torch.randn(1, 4))
     
     # 训练
-    total_epochs = 200
+    total_epochs = 300
     batch_size = 16
     total_batch = 1 if batch_size >= len(df) else len(df) // batch_size
     
@@ -104,6 +90,9 @@ if __name__ == "__main__":
             optimizer.step()
         
             print(f"Epoch {epoch+1}/{total_epochs}, Batch {batch+1}/{total_batch}, Loss: {loss.item():.3f}, Acc: {acc:.3f}")
+            writer.add_scalar('loss', loss.item(), epoch * total_batch + batch)
+            writer.add_scalar('acc', acc, epoch * total_batch + batch)
+            writer.close()
         
     # 测试
     x = torch.tensor(df.iloc[:, :4].values.astype(np.float32), dtype=torch.float32)
