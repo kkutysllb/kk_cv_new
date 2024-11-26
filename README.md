@@ -1,12 +1,10 @@
 # kk_cv_new
 
-# -*- coding: utf-8 -*-
-"""
-# --------------------------------------------------------
-# @Author : kkutysllb
-# @E-mail : libing1@sn.chinamobile.com，31468130@qq.com
-# @Date   : 2024-10-14 21:15
-# @Desc   : 异常目标注册
-# --------------------------------------------------------
-"""
+## ImageNet 1000分类标签
+
+[ImageNet1000分类标签](https://blog.csdn.net/winycg/article/details/101722445)
+
+## LeNet-5
+
+![LeNet-5](Net_Arch/lenet.svg)
 

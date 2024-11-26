@@ -37,10 +37,6 @@ class IrisNet(nn.Module):
             nn.Linear(100, 3)
         )
         
-    # def _init_weights(self):
-    #     for m in self.parameters():
-    #         nn.init.normal_(m)
-             
     def forward(self, x):
         return self.kk_layer(x)
         
@@ -64,7 +60,7 @@ if __name__ == "__main__":
     writer.add_graph(net, torch.randn(1, 4))
     
     # 训练
-    total_epochs = 300
+    total_epochs = 200
     batch_size = 16
     total_batch = 1 if batch_size >= len(df) else len(df) // batch_size
     
@@ -92,7 +88,7 @@ if __name__ == "__main__":
             print(f"Epoch {epoch+1}/{total_epochs}, Batch {batch+1}/{total_batch}, Loss: {loss.item():.3f}, Acc: {acc:.3f}")
             writer.add_scalar('loss', loss.item(), epoch * total_batch + batch)
             writer.add_scalar('acc', acc, epoch * total_batch + batch)
-            writer.close()
+    writer.close()
         
     # 测试
     x = torch.tensor(df.iloc[:, :4].values.astype(np.float32), dtype=torch.float32)

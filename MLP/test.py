@@ -14,10 +14,12 @@ print(torch.__version__)
 print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(0))
 
-
-from sklearn.datasets import load_iris
-
-iris = load_iris()
-print(iris.data.shape)
-print(iris.target.shape)
-print(iris)
+if torch.backends.mps.is_available():
+    print("MPS is available")
+    device = "mps"
+elif torch.cuda.is_available():
+    print("CUDA is available")
+    device = "cuda"
+else:
+    print("MPS is not available")
+    device = "cpu"
