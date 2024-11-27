@@ -68,9 +68,9 @@ def kk_plot_decision_boundary(model, X, y):
 
 def kk_use_svg_display():
     """指定matplotlib软件包输出svg图表以获得更清晰的图像。"""
-    plt.rcParams['font.sans-serif'] = ['Arial unicode MS']  # 用于正常显示中文标签
+    # plt.rcParams['font.sans-serif'] = ['Arial unicode MS']  # 用于正常显示中文标签
     # plt.rcParams['font.sans-serif'] = ['SimHei']  # 用于正常显示中文标签
-    plt.rcParams['axes.unicode_minus'] = False  # 用于正常显示负号-
+    # plt.rcParams['axes.unicode_minus'] = False  # 用于正常显示负号-
     backend_inline.set_matplotlib_formats('svg')
 
 

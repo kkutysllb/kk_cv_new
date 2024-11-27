@@ -12,11 +12,16 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torchvision.datasets import MNIST
+from torchvision import transforms
 
 import os
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
+from kk_libraries.kk_functions import kk_animator_train_evaluate, get_device
+from kk_libraries.kk_dataprocess import kk_load_data, kk_predict_gray_labels
+from kk_libraries.kk_constants import text_labels_mnist
 
 
 class LeNet_5(nn.Module):
@@ -51,5 +56,36 @@ class LeNet_5(nn.Module):
         x = self.out(x)
         return x
 
+
+# 定义数据预处理方法
+def kk_data_transform():
+    return {
+        'train': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+        'valid': transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+        }
+
+
 if __name__ == "__main__":
-    print(parent_dir)
+    # 数据加载
+    data_path = os.path.join(parent_dir, "data/MNIST")
+    train_loader, valid_loader, test_loader = kk_load_data(data_path, ratio=0.9, batch_size=64, DataSets=MNIST, transform=kk_data_transform())
+    
+    # 模型构建
+    model = LeNet_5(in_channels=1, num_classes=10)
+    
+    # 损失函数
+    criterion = nn.CrossEntropyLoss()
+    
+    # 优化器
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    
+    # 超参数
+    epochs = 100
+    device = get_device()
+    
+    # 训练
+    kk_animator_train_evaluate(model, train_loader, valid_loader, criterion, optimizer, epochs, device)
+    
+    # 测试
+    kk_predict_gray_labels(model, test_loader, text_labels_mnist, device)
+    

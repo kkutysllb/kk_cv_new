@@ -1,1 +1,2 @@
 outputs/best_weights/*.pth
+data/MNIST/
