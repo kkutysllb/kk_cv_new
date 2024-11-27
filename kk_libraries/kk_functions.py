@@ -248,8 +248,8 @@ def kk_train_accuracy(net, data_iter, criterion, optimizer, device=None):
         optimizer.step()
         with torch.no_grad():
             metrics.add(loss * X.shape[0], kk_accuracy(y_pred, y), X.shape[0])
-        # 手动清理缓存
-        torch.cuda.empty_cache()
+        # # 手动清理缓存
+        # torch.cuda.empty_cache()
     return metrics[0] / metrics[2], metrics[1] / metrics[2], metrics[2]
 
 
@@ -269,8 +269,8 @@ def kk_evaluate_accuracy(net, data_iter, criterion, device=None):
                 X = X.to(device)
             y = y.to(device)
             metric.add(criterion(net(X), y) * X.shape[0], kk_accuracy(net(X), y), X.shape[0])
-            # 手动清理缓存
-            torch.cuda.empty_cache()
+            # # 手动清理缓存
+            # torch.cuda.empty_cache()
     return metric[0] / metric[2], metric[1] / metric[2], metric[2]
 
 
@@ -421,7 +421,6 @@ def kk_animator_train_evaluate(model, train_iter, valid_iter, criterion, optimiz
 
     timer.start()  # 开始计时
     best_acc = 0.0
-    best_model_wts = copy.deepcopy(model.state_dict())
     for epoch in range(num_epochs):
         # 训练
         train_loss, train_acc, num_examples_train = kk_train_accuracy(model, train_iter, criterion, optimizer, device)
