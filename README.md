@@ -15,4 +15,4 @@
 
 ![AlexNet](Net_Arch/AlexNet.png)
 
-[AlexNet详解]([https://blog.csdn.net/weixin_44289118/article/details/125143348](https://blog.csdn.net/guzhao9901/article/details/118552085))
+[AlexNet详解](https://blog.csdn.net/guzhao9901/article/details/118552085)
