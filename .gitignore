@@ -1,5 +1,4 @@
 outputs/best_weights/*.pth
-data/MNIST
-data/FashionMNIST
-data/CIFAR10
+data/*
+runs/*
 models/*/*.pth

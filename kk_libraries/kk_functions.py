@@ -13,7 +13,7 @@ import platform
 import warnings
 from kk_libraries.kk_plots import kk_Animator, kk_plot_train_eval_curve, kk_plot
 import glob
-from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix, precision_score, roc_curve, auc, precision_recall_curve
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -716,36 +716,112 @@ class kk_ImageClassifierTrainer:
         test_loss = 0.0
         all_preds = []
         all_labels = []
+        all_probs = []  # 存储预测概率
 
         with torch.no_grad():
             for inputs, labels in test_loader:
                 outputs = self.model(inputs)
                 loss = self.criterion(outputs, labels)
                 test_loss += loss.item() * inputs.size(0)
+                probs = torch.softmax(outputs, dim=1)  # 获取概率
                 _, preds = torch.max(outputs, 1)
+                all_probs.extend(probs.cpu().numpy())
                 all_preds.extend(preds.cpu().numpy())
                 all_labels.extend(labels.cpu().numpy())
 
         test_loss /= len(test_loader.dataset)
+        all_probs = np.array(all_probs)
+        all_labels = np.array(all_labels)
+        all_preds = np.array(all_preds)
+
+        # 计算各项指标
         test_acc = accuracy_score(all_labels, all_preds)
         test_recall = recall_score(all_labels, all_preds, average='macro')
         test_f1 = f1_score(all_labels, all_preds, average='macro')
         conf_matrix = confusion_matrix(all_labels, all_preds)
 
+        # 打印测试结果
         print(f'测试损失: {test_loss:<.4f}, 测试精度: {test_acc:<5.3%}, '
               f'测试集 Recall: {test_recall:<5.3%}, 测试集 F1-score: {test_f1:.4f}')
         print('测试集 Confusion Matrix:')
         print(conf_matrix)
 
-        # 绘制混淆矩阵
-        plt.figure(figsize=(10, 8))
-        sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=self.class_name, yticklabels=self.class_name)
+        # 创建一个2x2的子图布局
+        fig = plt.figure(figsize=(20, 12))
+
+        # 1. 混淆矩阵
+        plt.subplot(221)
+        sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
+                    xticklabels=self.class_name, yticklabels=self.class_name)
         plt.xlabel('Predicted Label')
         plt.ylabel('True Label')
         plt.title('Confusion Matrix')
-        plt.show()
-        plt.savefig(os.path.join(self.logs_path, 'confusion_matrix.png'))
+
+        # 2. PR曲线
+        plt.subplot(222)
+        for i in range(len(self.class_name)):
+            precision, recall, thresholds = precision_recall_curve(
+                (all_labels == i).astype(int), 
+                all_probs[:, i]
+            )
+            plt.plot(recall, precision, label=f'{self.class_name[i]}')
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision-Recall Curve')
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        # 3. ROC曲线
+        plt.subplot(223)
+        for i in range(len(self.class_name)):
+            fpr, tpr, _ = roc_curve(
+                (all_labels == i).astype(int), 
+                all_probs[:, i]
+            )
+            roc_auc = auc(fpr, tpr)
+            plt.plot(fpr, tpr, label=f'{self.class_name[i]} (AUC = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC Curve')
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        # 4. F1曲线
+        plt.subplot(224)
+        for i in range(len(self.class_name)):
+            precision, recall, thresholds = precision_recall_curve(
+                (all_labels == i).astype(int), 
+                all_probs[:, i]
+            )
+            # 计算每个阈值下的F1分数
+            f1_scores = 2 * (precision * recall) / (precision + recall + 1e-7)  # 添加小量防止除零
+            plt.plot(thresholds, f1_scores[:-1], label=f'{self.class_name[i]}')  # 注意：f1_scores比thresholds多一个值
+            
+            # 找到最佳F1分数和对应的阈值
+            best_f1_idx = np.argmax(f1_scores)
+            best_threshold = thresholds[best_f1_idx] if best_f1_idx < len(thresholds) else thresholds[-1]
+            plt.plot(best_threshold, f1_scores[best_f1_idx], 'o', 
+                    label=f'{self.class_name[i]} best (t={best_threshold:.2f}, F1={f1_scores[best_f1_idx]:.2f})')
         
+        plt.xlabel('Threshold')
+        plt.ylabel('F1 Score')
+        plt.title('F1 Score vs Threshold')
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        # 调整布局并保存
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.logs_path, 'test_metrics.png'), 
+                    bbox_inches='tight', dpi=300)
+        plt.show()
+
+        # 保存详细的评估指标到CSV文件
+        metrics_df = pd.DataFrame({
+            'Class': self.class_name,
+            'Precision': precision_score(all_labels, all_preds, average=None),
+            'Recall': recall_score(all_labels, all_preds, average=None),
+            'F1-score': f1_score(all_labels, all_preds, average=None)
+        })
+        metrics_df.to_csv(os.path.join(self.logs_path, 'test_metrics.csv'), index=False)
+
     def animator(self, train_loader, val_loader):
         # 构建动态绘图配置
         animator = kk_Animator(xlabel='Epochs', ylabel='Loss and Accuracy', xlim=[1, self.num_epochs],

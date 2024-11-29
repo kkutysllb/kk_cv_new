@@ -273,6 +273,7 @@ def kk_load_data(dataset_path, batch_size, DataSets, transform, num_works=4):
 
     train_loader = data.DataLoader(data_train, batch_size=batch_size, shuffle=True, num_workers=num_works)
     test_loader = data.DataLoader(data_test, batch_size=batch_size, shuffle=False, num_workers=num_works)
+    print(f'训练数据集大小: {len(data_train)}, 测试数据集大小: {len(data_test)}')
 
     return train_loader, test_loader
 

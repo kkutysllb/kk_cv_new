@@ -27,33 +27,33 @@ class AlexNet(nn.Module):
         super(AlexNet, self).__init__()
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channels, 96, kernel_size=11, stride=4, padding=0),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
         self.conv2 = nn.Sequential(
              nn.Conv2d(96, 256, kernel_size=5, stride=1, padding=2),
-             nn.ReLU(),
+             nn.ReLU(inplace=True),
              nn.MaxPool2d(kernel_size=3, stride=2)
         )
         self.conv3 = nn.Sequential(
             nn.Conv2d(256, 384, kernel_size=3, stride=1, padding=1),
-            nn.ReLU()
+            nn.ReLU(inplace=True)
         )
         self.conv4 = nn.Sequential(
             nn.Conv2d(384, 384, kernel_size=3, stride=1, padding=1),
-            nn.ReLU()
+            nn.ReLU(inplace=True)
         )
         self.conv5 = nn.Sequential(
             nn.Conv2d(384, 256, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
         self.fc = nn.Sequential(
             nn.Linear(256*5*5, 4096),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(4096, 4096),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(4096, num_classes)
         )
@@ -72,8 +72,7 @@ class AlexNet(nn.Module):
 # 定义数据预处理
 def kk_data_transform():
     return {
-        'train': transforms.Compose([transforms.Resize(256),
-                                     transforms.CenterCrop(224),
+        'train': transforms.Compose([transforms.RandomResizedCrop(224),
                                       transforms.ToTensor(),
                                       transforms.Normalize(mean, std)]),
         'valid': transforms.Compose([transforms.Resize(256), 
