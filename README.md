@@ -19,7 +19,7 @@
 
 [AlexNet详解](https://blog.csdn.net/guzhao9901/article/details/118552085)
 
-[AlexNet论文](paper/ImageNet%20Classification%20with%20Deep%20Convolutional%20Neural%20Networks.pdf)
+[AlexNet论文](paper/imagenet-classification-with-deep-convolutional-neural-networks-Paper.pdf)
 
 ## VGG
 
