@@ -17,9 +17,9 @@ from datetime import datetime
 
 def kk_plot_train_eval_curve(num_epochs, train_losses, train_accs, test_losses, test_accs, titles='Train and Evaluate Curve'):
     """绘制训练评估曲线"""
-    plt.rcParams['font.sans-serif'] = ['Arial unicode MS']  # 用于正常显示中文标签
+    # plt.rcParams['font.sans-serif'] = ['Arial unicode MS']  # 用于正常显示中文标签
     # plt.rcParams['font.sans-serif'] = ['SimHei']  # 用于正常显示中文标签
-    plt.rcParams['axes.unicode_minus'] = False  # 用于正常显示负号-
+    # plt.rcParams['axes.unicode_minus'] = False  # 用于正常显示负号-
 
     plt.figure(figsize=(13, 5))
     plt.subplot(1, 2, 1)

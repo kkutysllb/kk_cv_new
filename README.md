@@ -16,3 +16,10 @@
 ![AlexNet](Net_Arch/AlexNet.png)
 
 [AlexNet详解](https://blog.csdn.net/guzhao9901/article/details/118552085)
+
+
+## VGG
+
+![VGG](Net_Arch/vgg_arch.png)
+
+[VGG详解]((https://blog.csdn.net/qq_37541097/article/details/104410535))

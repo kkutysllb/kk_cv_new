@@ -264,32 +264,17 @@ def kk_data_transform(flip_prob, train_resize, valid_resize, crop_size, mean, st
     }
 
 
-def kk_load_data(dataset_path, ratio, batch_size, DataSets, transform, num_works=4):
+def kk_load_data(dataset_path, batch_size, DataSets, transform, num_works=4):
     """
     加载数据集，并进行预处理，返回生成器
     """
     data_train = DataSets(root=dataset_path, train=True, transform=transform['train'], download=True)
     data_test = DataSets(root=dataset_path, train=False, transform=transform['valid'], download=True)
 
-    # 创建数据索引并打乱
-    num_train = len(data_train)
-    indices = list(range(num_train))
-    np.random.shuffle(indices)
-
-    # 划分训练集和验证集
-    split = int(np.floor(ratio * num_train))  # 20% 作为验证集
-    train_idx, val_idx = indices[split:], indices[:split]
-    print(f'训练集大小: {num_train - split}, 验证集大小: {split}, 测试集大小: {len(data_test)}')
-
-    # 定义采样器
-    train_sampler = SubsetRandomSampler(train_idx)
-    val_sampler = SubsetRandomSampler(val_idx)
-
-    train_loader = data.DataLoader(data_train, batch_size=batch_size, sampler=train_sampler, num_workers=num_works)
-    valid_loader = data.DataLoader(data_train, batch_size=batch_size, sampler=val_sampler, num_workers=num_works)
+    train_loader = data.DataLoader(data_train, batch_size=batch_size, shuffle=True, num_workers=num_works)
     test_loader = data.DataLoader(data_test, batch_size=batch_size, shuffle=False, num_workers=num_works)
 
-    return train_loader, valid_loader, test_loader
+    return train_loader, test_loader
 
 
 def kk_loader_train(root_path, batch_size, split_ratio=0.9, resize=None,

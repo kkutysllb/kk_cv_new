@@ -518,6 +518,10 @@ class kk_ImageClassifierTrainer:
         self.LRs = []
 
     def train_iter(self, train_loader, val_loader):
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
+        if not os.path.exists(self.logs_path):
+            os.makedirs(self.logs_path)
         metrics = kk_Accumulator(3)
         if not self.first_train:
             self.best_model_wts = torch.load(self.save_path)
@@ -540,9 +544,10 @@ class kk_ImageClassifierTrainer:
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-                metrics.add(loss * inputs.shape[0], kk_accuracy(outputs, labels), inputs.shape[0])
-                # 每100个batch做一次验证集评估
-                if self.batch_counter % 100 == 0:
+                with torch.no_grad():
+                    metrics.add(loss * inputs.shape[0], kk_accuracy(outputs, labels), inputs.shape[0])
+                # 每10个batch做一次验证集评估
+                if self.batch_counter % 10 == 0:
                     # 学习率
                     self.LRs.append(self.optimizer.param_groups[0]['lr'])
                     epoch_loss = metrics[0] / metrics[2]
@@ -554,7 +559,8 @@ class kk_ImageClassifierTrainer:
                     self.val_losses.append(val_loss)
                     self.val_accuracies.append(val_acc)
                     # 早停机制
-                    self._early_stopping(val_loss, val_acc)
+                    if self.patience is not None:
+                        self._early_stopping(val_loss, val_acc)
                     # 打印记录
                     print(f'Iter {self.batch_counter:<6} '
                           f'训练损失: {epoch_loss:<.4f}, '
@@ -585,11 +591,15 @@ class kk_ImageClassifierTrainer:
             '训练设备': str(self.device),
             '学习率': self.LRs
         })
-        train_logs.to_csv(self.logs_path, index=False)
+        train_logs.to_csv(os.path.join(self.logs_path, 'train_logs.csv'), index=False)
         print(f"训练轮次: {epoch + 1} 训练耗时: {str(int(hours)) + ':' + str(int(minutes)) + ':' + str(int(seconds)).split('.')[0]} "
               f'训练设备: {str(self.device)}')
 
     def train_epoch(self, train_loader, val_loader):
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
+        if not os.path.exists(self.logs_path):
+            os.makedirs(self.logs_path)
         metrics = kk_Accumulator(3)
         if not self.first_train:
             self.best_model_wts = torch.load(self.save_path)
@@ -614,7 +624,8 @@ class kk_ImageClassifierTrainer:
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
-                metrics.add(loss * inputs.shape[0], kk_accuracy(outputs, labels), inputs.shape[0])
+                with torch.no_grad():
+                    metrics.add(loss * inputs.shape[0], kk_accuracy(outputs, labels), inputs.shape[0])
             epoch_loss = metrics[0] / metrics[2]
             epoch_acc = metrics[1] / metrics[2]
             self.train_losses.append(epoch_loss)
@@ -624,7 +635,8 @@ class kk_ImageClassifierTrainer:
             self.val_losses.append(val_loss)
             self.val_accuracies.append(val_acc)
             # 早停机制
-            self._early_stopping(val_loss, val_acc)
+            if self.patience is not None:
+                self._early_stopping(val_loss, val_acc)
             # 打印记录
             print(f'Epoch 【{epoch + 1}/{self.num_epochs}】 '
                   f'训练损失: {epoch_loss:<.4f}, '
@@ -653,7 +665,7 @@ class kk_ImageClassifierTrainer:
             '训练设备': str(self.device),
             '学习率': self.LRs
         })
-        train_logs.to_csv(self.logs_path, index=False)
+        train_logs.to_csv(os.path.join(self.logs_path, 'train_logs.csv'), index=False)
         print(f"训练轮次: {epoch + 1} 训练耗时: {str(int(hours)) + ':' + str(int(minutes)) + ':' + str(int(seconds)).split('.')[0]} "
               f'训练设备: {str(self.device)}')
 
@@ -679,7 +691,7 @@ class kk_ImageClassifierTrainer:
         if  val_acc > self.best_val_acc:
             self.best_val_acc = val_acc
             self.best_model_wts = self.model.state_dict().copy()
-            torch.save(self.model.state_dict(), self.save_path)
+            torch.save(self.model.state_dict(), os.path.join(self.save_path, 'best_model.pth'))
             self.epochs_no_improve = 0
             self.update_flag = '*'
         else:
@@ -690,11 +702,12 @@ class kk_ImageClassifierTrainer:
             self.early_stop = True
 
     def plot_training_curves(self, xaixs):
-        kk_plot(X=xaixs, Y=[self.train_losses, self.train_accuracies, self.val_accuracies],
+        kk_plot(X=list(xaixs), Y=[self.train_losses, self.train_accuracies, self.val_accuracies],
                 xlabel='Iters', ylabel='Loss & Accuracy', xlim=[0, xaixs[-1]],
                 legend=['Train Loss', 'Train Accuracy', 'Val Accuracy'],
                 titles=[self.plot_titles], figsize=(12, 4))
         plt.show()
+        plt.savefig(os.path.join(self.logs_path, 'training_curves.png'))
 
     def test(self, test_loader):
         self.model.load_state_dict(self.best_model_wts)
@@ -731,6 +744,8 @@ class kk_ImageClassifierTrainer:
         plt.ylabel('True Label')
         plt.title('Confusion Matrix')
         plt.show()
+        plt.savefig(os.path.join(self.logs_path, 'confusion_matrix.png'))
+        
     def animator(self, train_loader, val_loader):
         # 构建动态绘图配置
         animator = kk_Animator(xlabel='Epochs', ylabel='Loss and Accuracy', xlim=[1, self.num_epochs],

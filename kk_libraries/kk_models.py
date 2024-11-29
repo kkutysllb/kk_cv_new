@@ -259,11 +259,12 @@ class kk_VGG(nn.Module):
     def __init__(self, vgg_name, cfg, num_classes):
         super(kk_VGG, self).__init__()
         self.features = self._mark_layers(cfg[vgg_name])
+        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.outlayer = nn.Linear(512 * 1 * 1, num_classes)
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.shape[0], -1)
+        x = self.avgpool(x)
         x = self.outlayer(x)
         return x
 
