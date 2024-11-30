@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 # --------------------------------------------------------
-# @Author : ${1:kkutysllb
-# @E-mail : libing1@sn.chinamobile.com, 31468130@qq.com
-# @Date   : 2024-11-29 15:11
-# @Desc   : vgg模型图像分类
+# @Author : kkutysllb
+# @E-mail : libing1@sn.chinamobile.com，31468130@qq.com
+# @Date   : 2024-10-14 21:15
+# @Desc   : VGG_KAN 模型 图像分类
 # --------------------------------------------------------
 """
 import torch
@@ -31,22 +32,60 @@ vgg_cfg = {
 }
 
 # 模型定义
-class VGG(nn.Module):
-    """带BN层的VGG模型"""
+class VGG_KAN(nn.Module):
+    """Knowledge Augmented Network based on VGG architecture"""
     def __init__(self, vgg_name, cfg, in_channels=3, num_classes=10):
-        super(VGG, self).__init__()
+        super(VGG_KAN, self).__init__()
         self.in_channels = in_channels
         self.features = self._make_layers(cfg[vgg_name])
+        
+        # Knowledge Enhancement Module
+        self.knowledge_module = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True)
+        )
+        
+        # Attention Module
+        self.attention = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=1),
+            nn.BatchNorm2d(512),
+            nn.Sigmoid()
+        )
+        
         self.output_layer = nn.Sequential(
             nn.Linear(512, 512),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
-            nn.Linear(512, num_classes)
+            nn.Linear(512, 256),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Linear(256, num_classes)
         )
         
-        # 权重初始化
         self._initialize_weights()
+
+    def forward(self, x):
+        # Feature extraction
+        x = self.features(x)
         
+        # Knowledge enhancement
+        k = self.knowledge_module(x)
+        
+        # Attention mechanism
+        att = self.attention(k)
+        x = x * att + k
+        
+        # Global average pooling
+        x = torch.mean(x, dim=(2, 3))
+        
+        # Classification
+        x = self.output_layer(x)
+        return x
+
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -61,12 +100,6 @@ class VGG(nn.Module):
                 nn.init.constant_(m.bias, 0)
         
 
-    def forward(self, x):
-        x = self.features(x)
-        x = torch.mean(x, dim=(2, 3))
-        x = self.output_layer(x)
-        return x  
-    
     def _make_layers(self, cfg):
         layers = []
         in_channels = self.in_channels
@@ -88,9 +121,9 @@ class Config(object):
         self.num_epochs = 200
         self.in_channels = 3
         self.num_classes = 10
-        self.batch_size = 256
+        self.batch_size = 512
         self.patience = 500
-        self.lr = 0.1
+        self.lr = 0.001
         self.device = get_device()
         self.plot_titles = self.vgg_name
         self.save_path = os.path.join(parent_dir, 'models', self.vgg_name)
@@ -121,11 +154,11 @@ if __name__ == "__main__":
 
     # 模型实例
     
-    model = VGG(vgg_name=config.vgg_name, cfg=config.cfg, in_channels=config.in_channels, num_classes=config.num_classes)
+    model = KAN(vgg_name=config.vgg_name, cfg=config.cfg, in_channels=config.in_channels, num_classes=config.num_classes)
 
     # 损失函数，优化器，学习率调度器
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=config.lr, weight_decay=5e-4, momentum=0.9)
+    optimizer = optim.Adam(model.parameters(), lr=config.lr, weight_decay=5e-4)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=50, min_lr=1e-6)
 

@@ -570,8 +570,12 @@ class kk_ImageClassifierTrainer:
                           f'训练设备: {str(self.device)}, '
                           f'学习率: {self.LRs[-1]:<.9f}')
                     # 更新学习率
-                    if self.scheduler is not None:
+                    if self.scheduler is not None and self.scheduler.__class__.__name__ == 'StepLR':
                         self.scheduler.step()
+                    elif self.scheduler.__class__.__name__ == 'ReduceLROnPlateau':
+                        self.scheduler.step(val_loss)
+                    else:
+                        self.scheduler = None
                     self.batch_list.append(self.batch_counter)
                 self.batch_counter += 1
 
@@ -646,8 +650,12 @@ class kk_ImageClassifierTrainer:
                   f'训练设备: {str(self.device)}, '
                   f'学习率: {self.LRs[-1]:.9f}')
             # 更新学习率
-            if self.scheduler is not None:
+            if self.scheduler is not None and self.scheduler.__class__.__name__ == 'StepLR':
                 self.scheduler.step()
+            elif self.scheduler.__class__.__name__ == 'ReduceLROnPlateau':
+                self.scheduler.step(val_loss)
+            else:
+                self.scheduler = None
 
         self.timer.stop()
         time_total = self.timer.sum()
@@ -706,8 +714,9 @@ class kk_ImageClassifierTrainer:
                 xlabel='Iters', ylabel='Loss & Accuracy', xlim=[0, xaixs[-1]],
                 legend=['Train Loss', 'Train Accuracy', 'Val Accuracy'],
                 titles=[self.plot_titles], figsize=(12, 4))
+       
+        plt.savefig(os.path.join(self.logs_path, 'training_curves.png'), dpi=300)
         plt.show()
-        plt.savefig(os.path.join(self.logs_path, 'training_curves.png'))
 
     def test(self, test_loader):
         self.model.load_state_dict(self.best_model_wts)

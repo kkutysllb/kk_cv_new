@@ -45,16 +45,16 @@ class AlexNet_KAN(nn.Module):
     def __init__(self, in_channels=3, num_classes=10):
         super(AlexNet_KAN, self).__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, 96, kernel_size=11, stride=4, padding=0),
+            nn.Conv2d(in_channels, 96, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
         self.ka1 = KnowledgeAttention(96)
 
         self.conv2 = nn.Sequential(
-            nn.Conv2d(96, 256, kernel_size=5, stride=1, padding=2),
+            nn.Conv2d(96, 256, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
         self.ka2 = KnowledgeAttention(256)
 
@@ -73,12 +73,12 @@ class AlexNet_KAN(nn.Module):
         self.conv5 = nn.Sequential(
             nn.Conv2d(384, 256, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
         self.ka5 = KnowledgeAttention(256)
 
         self.fc = nn.Sequential(
-            nn.Linear(256*5*5, 4096),
+            nn.Linear(256*4*4, 4096),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(4096, 4096),
@@ -86,6 +86,19 @@ class AlexNet_KAN(nn.Module):
             nn.Dropout(p=0.5),
             nn.Linear(4096, num_classes)
         )
+        self._initialize_weights()
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
     
     def forward(self, x):
         x = self.conv1(x)
@@ -111,19 +124,16 @@ class AlexNet_KAN(nn.Module):
 # 定义数据预处理
 def kk_data_transform():
     return {
-        'train': transforms.Compose([transforms.RandomResizedCrop(224),
-                                      transforms.ToTensor(),
-                                      transforms.Normalize(mean, std)]),
-        'valid': transforms.Compose([transforms.Resize(256), 
-                                     transforms.CenterCrop(224),
-                                     transforms.ToTensor(), 
+        'train': transforms.Compose([transforms.ToTensor(),
+                                    transforms.Normalize(mean, std)]),
+        'valid': transforms.Compose([transforms.ToTensor(), 
                                      transforms.Normalize(mean, std)])
     }
 
 
 class Config(object):
     def __init__(self):
-        self.num_epochs = 50
+        self.num_epochs = 100
         self.lr = 0.001
         self.device = get_device()
         self.patience = 500
@@ -146,8 +156,9 @@ if __name__ == "__main__":
    
    # 定义损失函数和优化器C
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config.lr)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+    optimizer = optim.Adam(model.parameters(), lr=config.lr, weight_decay=5e-4, betas=(0.9, 0.999), eps=1e-8)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-6)
 
     # 模型训练
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)

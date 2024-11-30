@@ -86,7 +86,7 @@ class LeNet_5_KAN(nn.Module):
     
 class Config(object):
     def __init__(self):
-        self.num_epochs = 50
+        self.num_epochs = 100
         self.lr = 0.01
         self.patience = 500
         self.batch_size = 512
