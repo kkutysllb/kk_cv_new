@@ -61,8 +61,8 @@ class LeNet_5(nn.Module):
     
 class Config(object):
     def __init__(self):
-        self.num_epochs = 50
-        self.lr = 0.01
+        self.num_epochs = 200
+        self.lr = 0.1
         self.patience = 500
         self.batch_size = 512
         self.device = get_device()
@@ -70,6 +70,7 @@ class Config(object):
         self.logs_path = os.path.join(parent_dir, "logs", "LeNet5")
         self.plot_titles = "LeNet5"
         self.class_list = text_labels_fashion_mnist
+        self.dataset_name = "FashionMNIST"
         
     def __call__(self):
         return self.num_epochs, self.lr, self.patience, self.batch_size, self.device, self.save_path, self.logs_path, self.plot_titles, self.class_list
@@ -94,8 +95,9 @@ if __name__ == "__main__":
     
     # 定义损失函数和优化器
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config.lr)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+    optimizer = optim.SGD(model.parameters(), lr=config.lr, momentum=0.9)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=70, min_lr=1e-6)
     
     # 模型训练  
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)

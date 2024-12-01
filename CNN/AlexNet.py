@@ -72,6 +72,8 @@ class AlexNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
+    
+    
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
@@ -96,7 +98,7 @@ def kk_data_transform():
 class Config(object):
     def __init__(self):
         self.num_epochs = 200
-        self.lr = 0.001
+        self.lr = 0.01
         self.device = get_device()
         self.patience = 500
         self.save_path = os.path.join(parent_dir, "models", "AlexNet")
@@ -104,16 +106,18 @@ class Config(object):
         self.plot_titles = "AlexNet"
         self.batch_size = 512
         self.class_list = text_labels_cifar10
+        self.dataset_name = "CIFAR10"
 
     def __call__(self):
         return self.num_epochs, self.lr, self.device, self.patience, self.save_path, self.logs_path, self.plot_titles, self.class_list
 
 if __name__ == "__main__":
+    config = Config()
     # 数据加载
     data_path = os.path.join(parent_dir, "data", "CIFAR10")
-    train_loader,test_loader = kk_load_data(data_path, batch_size=512, DataSets=CIFAR10, transform=kk_data_transform(), num_works=4)
+    train_loader,test_loader = kk_load_data(data_path, batch_size=config.batch_size, DataSets=CIFAR10, transform=kk_data_transform(), num_works=4)
 
-    config = Config()
+    
     # 模型定义
     model = AlexNet(in_channels=3, num_classes=10)
    
@@ -121,7 +125,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.lr)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=50,  min_lr=1e-6)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=70,  min_lr=1e-6)
 
     # 模型训练
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)

@@ -499,6 +499,7 @@ class kk_ImageClassifierTrainer:
         self.logs_path = config.logs_path
         self.plot_titles = config.plot_titles
         self.class_name = config.class_list
+        self.dataset_name = config.dataset_name
 
         self.train_losses = []
         self.val_losses = []
@@ -595,7 +596,7 @@ class kk_ImageClassifierTrainer:
             '训练设备': str(self.device),
             '学习率': self.LRs
         })
-        train_logs.to_csv(os.path.join(self.logs_path, 'train_logs.csv'), index=False)
+        train_logs.to_csv(os.path.join(self.logs_path, f'{self.dataset_name}_train_logs.csv'), index=False)
         print(f"训练轮次: {epoch + 1} 训练耗时: {str(int(hours)) + ':' + str(int(minutes)) + ':' + str(int(seconds)).split('.')[0]} "
               f'训练设备: {str(self.device)}')
 
@@ -673,7 +674,7 @@ class kk_ImageClassifierTrainer:
             '训练设备': str(self.device),
             '学习率': self.LRs
         })
-        train_logs.to_csv(os.path.join(self.logs_path, 'train_logs.csv'), index=False)
+        train_logs.to_csv(os.path.join(self.logs_path, f'{self.dataset_name}_train_logs.csv'), index=False)
         print(f"训练轮次: {epoch + 1} 训练耗时: {str(int(hours)) + ':' + str(int(minutes)) + ':' + str(int(seconds)).split('.')[0]} "
               f'训练设备: {str(self.device)}')
 
@@ -710,12 +711,49 @@ class kk_ImageClassifierTrainer:
             self.early_stop = True
 
     def plot_training_curves(self, xaixs):
-        kk_plot(X=list(xaixs), Y=[self.train_losses, self.train_accuracies, self.val_accuracies],
-                xlabel='Iters', ylabel='Loss & Accuracy', xlim=[0, xaixs[-1]],
-                legend=['Train Loss', 'Train Accuracy', 'Val Accuracy'],
-                titles=[self.plot_titles], figsize=(12, 4))
-       
-        plt.savefig(os.path.join(self.logs_path, 'training_curves.png'), dpi=300)
+        # 创建2x2的子图布局
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+        
+        # 绘制训练损失曲线
+        ax1.plot(xaixs, self.train_losses, 'b-', label='train loss')
+        ax1.set_xlabel('Iters')
+        ax1.set_ylabel('Loss')
+        ax1.set_title('Training Loss Curve')
+        ax1.legend()
+        ax1.grid(True)
+        
+        # 绘制训练精度曲线
+        ax2.plot(xaixs, self.train_accuracies, 'g-', label='train acc')
+        ax2.set_xlabel('Iters')
+        ax2.set_ylabel('Accuracy')
+        ax2.set_title('Training Accuracy Curve')
+        ax2.legend()
+        ax2.grid(True)
+        
+        # 绘制验证损失曲线
+        ax3.plot(xaixs, self.val_losses, 'r-', label='val loss')
+        ax3.set_xlabel('Iters')
+        ax3.set_ylabel('Loss')
+        ax3.set_title('Validation Loss Curve')
+        ax3.legend()
+        ax3.grid(True)
+        
+        # 绘制验证精度曲线
+        ax4.plot(xaixs, self.val_accuracies, 'm-', label='val acc')
+        ax4.set_xlabel('Iters')
+        ax4.set_ylabel('Accuracy')
+        ax4.set_title('Validation Accuracy Curve')
+        ax4.legend()
+        ax4.grid(True)
+        
+        # 添加总标题
+        fig.suptitle(self.plot_titles, fontsize=16)
+        
+        # 调整布局避免重叠
+        plt.tight_layout()
+        
+        # 保存图像
+        plt.savefig(os.path.join(self.logs_path, f'{self.dataset_name}_training_curves.png'), dpi=300)
         plt.show()
 
     def test(self, test_loader):
@@ -818,7 +856,7 @@ class kk_ImageClassifierTrainer:
 
         # 调整布局并保存
         plt.tight_layout()
-        plt.savefig(os.path.join(self.logs_path, 'test_metrics.png'), 
+        plt.savefig(os.path.join(self.logs_path, f'{self.dataset_name}_test_metrics.png'), 
                     bbox_inches='tight', dpi=300)
         plt.show()
 
@@ -829,7 +867,7 @@ class kk_ImageClassifierTrainer:
             'Recall': recall_score(all_labels, all_preds, average=None),
             'F1-score': f1_score(all_labels, all_preds, average=None)
         })
-        metrics_df.to_csv(os.path.join(self.logs_path, 'test_metrics.csv'), index=False)
+        metrics_df.to_csv(os.path.join(self.logs_path, f'{self.dataset_name}_test_metrics.csv'), index=False)
 
     def animator(self, train_loader, val_loader):
         # 构建动态绘图配置
