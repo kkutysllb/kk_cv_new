@@ -562,6 +562,8 @@ class kk_ImageClassifierTrainer:
                     # 早停机制
                     if self.patience is not None:
                         self._early_stopping(val_loss, val_acc)
+                    else:
+                        self._save_best_model(val_loss, val_acc)
                     # 打印记录
                     print(f'Iter {self.batch_counter:<6} '
                           f'训练损失: {epoch_loss:<.4f}, '
@@ -642,6 +644,8 @@ class kk_ImageClassifierTrainer:
             # 早停机制
             if self.patience is not None:
                 self._early_stopping(val_loss, val_acc)
+            else:
+                self._save_best_model(val_loss, val_acc)
             # 打印记录
             print(f'Epoch 【{epoch + 1}/{self.num_epochs}】 '
                   f'训练损失: {epoch_loss:<.4f}, '
@@ -709,6 +713,17 @@ class kk_ImageClassifierTrainer:
 
         if self.epochs_no_improve >= self.patience:
             self.early_stop = True
+
+    def _save_best_model(self, val_loss, val_acc):
+        if val_loss < self.best_val_loss:
+            self.best_val_loss = val_loss
+        if  val_acc > self.best_val_acc:
+            self.best_val_acc = val_acc
+            self.best_model_wts = self.model.state_dict().copy()
+            torch.save(self.model.state_dict(), os.path.join(self.save_path, 'best_model.pth'))
+            self.update_flag = '*'
+        else:
+            self.update_flag = ''
 
     def plot_training_curves(self, xaixs):
         # 创建2x2的子图布局

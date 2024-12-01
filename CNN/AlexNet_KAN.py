@@ -133,7 +133,7 @@ def kk_data_transform():
 
 class Config(object):
     def __init__(self):
-        self.num_epochs = 100
+        self.num_epochs = 200
         self.lr = 0.001
         self.device = get_device()
         self.patience = 500
@@ -141,9 +141,10 @@ class Config(object):
         self.logs_path = os.path.join(parent_dir, "logs", "AlexNet_KAN")
         self.plot_titles = "AlexNet_KAN"
         self.class_list = text_labels_cifar10
+        self.dataset_name = "CIFAR10"
 
     def __call__(self):
-        return self.num_epochs, self.lr, self.device, self.patience, self.save_path, self.logs_path, self.plot_titles, self.class_list
+        return self.num_epochs, self.lr, self.device, self.patience, self.save_path, self.logs_path, self.plot_titles, self.class_list, self.dataset_name
 
 if __name__ == "__main__":
     # 数据加载
@@ -156,12 +157,12 @@ if __name__ == "__main__":
    
    # 定义损失函数和优化器C
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config.lr, weight_decay=5e-4, betas=(0.9, 0.999), eps=1e-8)
+    optimizer = optim.AdamW(model.parameters(), lr=config.lr, weight_decay=5e-4)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-6)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=70, min_lr=1e-6)
 
     # 模型训练
-    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)
+    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=scheduler)
     trainer.train_iter(train_loader, test_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 

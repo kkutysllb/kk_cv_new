@@ -8,6 +8,10 @@ import hashlib
 import tarfile
 import zipfile
 import requests
+import kagglehub
+
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root_dir)
 
 
 '''
@@ -62,3 +66,20 @@ def kk_download_all():
     for name in DATA_HUB:
         kk_download(name)
         
+
+
+
+def get_dataset_kaggle_cat_dog():
+    # Download latest version
+    dataset_path = os.path.join(root_dir, "data", "cat-dog-all")
+    if not os.path.exists(dataset_path):
+        os.makedirs(dataset_path)
+    path = kagglehub.dataset_download("lizhensheng/cat-dog-all", path=dataset_path)
+
+    print("Path to dataset files:", path)
+
+
+
+if __name__ == "__main__":
+    get_dataset_kaggle_cat_dog()
+

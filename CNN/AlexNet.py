@@ -98,7 +98,7 @@ def kk_data_transform():
 class Config(object):
     def __init__(self):
         self.num_epochs = 200
-        self.lr = 0.01
+        self.lr = 0.001
         self.device = get_device()
         self.patience = 500
         self.save_path = os.path.join(parent_dir, "models", "AlexNet")

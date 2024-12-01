@@ -88,17 +88,20 @@ class Config(object):
         self.num_epochs = 200
         self.in_channels = 3
         self.num_classes = 10
-        self.batch_size = 256
-        self.patience = 500
-        self.lr = 0.1
+        self.batch_size = 512
+        self.patience = None
+        self.lr = 0.01
         self.device = get_device()
         self.plot_titles = self.vgg_name
         self.save_path = os.path.join(parent_dir, 'models', self.vgg_name)
         self.logs_path = os.path.join(parent_dir, 'logs', self.vgg_name)
         self.class_list = text_labels_cifar10
+        self.dataset_name = "CIFAR10"
     
     def __call__(self):
-        return self.vgg_name, self.cfg, self.in_channels, self.num_classes, self.batch_size, self.patience, self.lr, self.device, self.save_path, self.logs_path, self.plot_titles
+        return self.vgg_name, self.cfg, self.in_channels, self.num_classes, self.batch_size, \
+        self.patience, self.lr, self.device, self.save_path, self.logs_path, self.plot_titles, \
+        self.class_list, self.dataset_name
     
 def kk_data_transform():
     """数据变换"""
@@ -125,14 +128,14 @@ if __name__ == "__main__":
 
     # 损失函数，优化器，学习率调度器
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=config.lr, weight_decay=5e-4, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=config.lr, weight_decay=5e-4, momentum=0.9, nesterov=True)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=50, min_lr=1e-6)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=70, min_lr=1e-6)
 
     # 训练模型
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)
     trainer.train_iter(train_loader, valid_loader)
-    trainer.plot_training_curves(xaxis=range(1, len(trainer.train_losses) + 1))
+    trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
     # 测试
     trainer.test(valid_loader)
