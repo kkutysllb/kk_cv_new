@@ -53,17 +53,14 @@ class VGG_KAN(nn.Module):
         self.attention = nn.Sequential(
             nn.Conv2d(512, 512, kernel_size=1),
             nn.BatchNorm2d(512),
-            nn.Sigmoid()
+            nn.ReLU(inplace=True)
         )
         
         self.output_layer = nn.Sequential(
             nn.Linear(512, 512),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
-            nn.Linear(512, 256),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=0.5),
-            nn.Linear(256, num_classes)
+            nn.Linear(512, num_classes),
         )
         
         self._initialize_weights()
@@ -116,18 +113,18 @@ class VGG_KAN(nn.Module):
 class Config(object):
     """配置类"""
     def __init__(self):
-        self.vgg_name = 'VGG16_KAN'
+        self.vgg_name = 'VGG16'
         self.cfg = vgg_cfg
         self.num_epochs = 200
         self.in_channels = 3
         self.num_classes = 10
         self.batch_size = 512
         self.patience = None
-        self.lr = 0.01
+        self.lr = 0.001
         self.device = get_device()
-        self.plot_titles = self.vgg_name
-        self.save_path = os.path.join(parent_dir, 'models', self.vgg_name)
-        self.logs_path = os.path.join(parent_dir, 'logs', self.vgg_name)
+        self.plot_titles = "VGG16_KAN"
+        self.save_path = os.path.join(parent_dir, 'models', self.plot_titles)
+        self.logs_path = os.path.join(parent_dir, 'logs', self.plot_titles)
         self.class_list = text_labels_cifar10
         self.dataset_name = "CIFAR10"
     def __call__(self):
@@ -158,12 +155,13 @@ if __name__ == "__main__":
 
     # 损失函数，优化器，学习率调度器
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=config.lr, weight_decay=5e-4, momentum=0.9, nesterov=True)
+    # optimizer = optim.SGD(model.parameters(), lr=config.lr, weight_decay=5e-4, momentum=0.9, nesterov=True)
+    optimizer = optim.AdamW(model.parameters(), lr=config.lr)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=70, min_lr=1e-6)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
 
     # 训练模型
-    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=None)
+    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=scheduler)
     trainer.train_iter(train_loader, valid_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 

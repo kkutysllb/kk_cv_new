@@ -134,7 +134,7 @@ def kk_data_transform():
 class Config(object):
     def __init__(self):
         self.num_epochs = 200
-        self.lr = 0.001
+        self.lr = 0.01
         self.device = get_device()
         self.patience = 500
         self.save_path = os.path.join(parent_dir, "models", "AlexNet_KAN")
@@ -148,7 +148,7 @@ class Config(object):
 
 if __name__ == "__main__":
     # 数据加载
-    data_path = os.path.join(parent_dir, "data/CIFAR10")
+    data_path = os.path.join(parent_dir, "data“， ”CIFAR10")
     train_loader,test_loader = kk_load_data(data_path, batch_size=512, DataSets=CIFAR10, transform=kk_data_transform())
 
     config = Config()
