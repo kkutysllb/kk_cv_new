@@ -171,7 +171,7 @@ class Config(object):
         self.num_epochs = 200
         self.in_channels = 3
         self.num_classes = 10
-        self.batch_size = 256
+        self.batch_size = 512
         self.patience = 500
         self.lr = 0.001
         self.device = get_device()
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5)
 
     # 训练模型
-    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler, train_loader, valid_loader)
+    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)
     trainer.train_iter(train_loader, valid_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
     

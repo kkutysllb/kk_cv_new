@@ -9,7 +9,9 @@ from torch.utils import data
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import ToPILImage
+from torchvision.datasets import Food101, DTD, Flowers102, StanfordCars
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -268,13 +270,20 @@ def kk_load_data(dataset_path, batch_size, DataSets, transform, num_works=4):
     """
     加载数据集，并进行预处理，返回生成器
     """
-    data_train = DataSets(root=dataset_path, train=True, transform=transform['train'], download=True)
-    data_test = DataSets(root=dataset_path, train=False, transform=transform['valid'], download=True)
+    # 检查是否是特殊数据集
+    if DataSets in [Food101, DTD, Flowers102, StanfordCars]:
+        # 这些数据集使用 'split' 参数
+        data_train = DataSets(root=dataset_path, split='train', transform=transform['train'], download=True)
+        data_test = DataSets(root=dataset_path, split='test', transform=transform['valid'], download=True)
+    else:
+        # CIFAR 等传统数据集使用 'train' 参数
+        data_train = DataSets(root=dataset_path, train=True, transform=transform['train'], download=True, num_workers=num_works)
+        data_test = DataSets(root=dataset_path, train=False, transform=transform['valid'], download=True, num_workers=num_works)
 
-    train_loader = data.DataLoader(data_train, batch_size=batch_size, shuffle=True, num_workers=num_works)
-    test_loader = data.DataLoader(data_test, batch_size=batch_size, shuffle=False, num_workers=num_works)
-    print(f'训练数据集大小: {len(data_train)}, 测试数据集大小: {len(data_test)}')
-
+    # 创建数据加载器
+    train_loader = DataLoader(dataset=data_train, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=data_test, batch_size=batch_size, shuffle=False)
+    
     return train_loader, test_loader
 
 

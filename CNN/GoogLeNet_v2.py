@@ -158,7 +158,7 @@ class Config(object):
         self.num_epochs = 200
         self.in_channels = 3
         self.num_classes = 10
-        self.batch_size = 256
+        self.batch_size = 512
         self.patience = 500
         self.lr = 0.001
         self.device = get_device()
@@ -218,8 +218,8 @@ if __name__ == "__main__":
     model = GoogLeNetV2(config.in_channels, config.num_classes)
 
     # 损失函数，优化器，学习率
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=config.lr, weight_decay=1e-2, momentum=0.9)
+    criterion = LabelSmoothingCrossEntropy(smoothing=0.05)
+    optimizer = optim.AdamW(model.parameters(), lr=config.lr, weight_decay=5e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5) 
 
     # 训练

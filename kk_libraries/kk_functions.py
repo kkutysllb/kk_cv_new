@@ -6,6 +6,8 @@ import copy
 from datetime import datetime
 import os
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 import time
@@ -912,3 +914,19 @@ class kk_ImageClassifierTrainer:
             # 动态绘制训练曲线
             if (epoch + 1) % 1 == 0 or epoch == self.num_epochs - 1:
                 animator.add(epoch + 1, (train_loss, train_acc, val_acc))
+                
+                
+class kk_LabelSmoothingCrossEntropy(nn.Module):
+    """googlenet v2 标签平滑交叉熵损失实现"""
+    def __init__(self, smoothing=0.1):
+        super().__init__()
+        self.smoothing = smoothing
+        
+    def forward(self, pred, target):
+        n_classes = pred.size(-1)
+        # 将真实标签转换为one-hot编码
+        one_hot = torch.zeros_like(pred).scatter(1, target.unsqueeze(1), 1)
+        # 应用标签平滑
+        smooth_one_hot = one_hot * (1 - self.smoothing) + self.smoothing / n_classes
+        loss = (-smooth_one_hot * F.log_softmax(pred, dim=1)).sum(dim=1).mean()
+        return loss
