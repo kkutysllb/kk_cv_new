@@ -277,8 +277,8 @@ def kk_load_data(dataset_path, batch_size, DataSets, transform, num_works=4):
         data_test = DataSets(root=dataset_path, split='test', transform=transform['valid'], download=True)
     else:
         # CIFAR 等传统数据集使用 'train' 参数
-        data_train = DataSets(root=dataset_path, train=True, transform=transform['train'], download=True, num_workers=num_works)
-        data_test = DataSets(root=dataset_path, train=False, transform=transform['valid'], download=True, num_workers=num_works)
+        data_train = DataSets(root=dataset_path, train=True, transform=transform['train'], download=True)
+        data_test = DataSets(root=dataset_path, train=False, transform=transform['valid'], download=True)
 
     # 创建数据加载器
     train_loader = DataLoader(dataset=data_train, batch_size=batch_size, shuffle=True)
