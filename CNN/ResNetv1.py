@@ -37,7 +37,10 @@ sys.path.append(root_dir)
 
 from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer, kk_LabelSmoothingCrossEntropy
 from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import text_labels_cifar10, mean, std
+from kk_libraries.kk_constants import text_labels_cifar10
+
+mean = [0.5, 0.5, 0.5]
+std = [0.5, 0.5, 0.5]
 
 
 # 定义BasicBlock  18，34基础残差块
@@ -196,7 +199,7 @@ class Config(object):
             self.num_classes = 196
         else:
             self.num_classes = 10
-        self.patience = None
+        self.patience = 1000
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
         self.plot_titles = self.model_name

@@ -11,7 +11,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import FashionMNIST
 from torchvision import transforms
 import sys
 import os
@@ -19,21 +19,23 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer
 from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import text_labels_cifar10, mean, std
+from kk_libraries.kk_constants import text_labels_fashion_mnist
+mean = [0.5, ]
+std = [0.5, ]
 
 
 class AlexNet(nn.Module):
     def __init__(self, in_channels=3, num_classes=10):
         super(AlexNet, self).__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, 96, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels, 96, kernel_size=11, stride=4, padding=2),  # 修改kernel_size和stride
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=3, stride=2)  # 修改pool大小和stride
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(96, 256, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(96, 256, kernel_size=5, stride=1, padding=2),  # 修改kernel_size
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=3, stride=2)  # 修改pool大小
         )
         self.conv3 = nn.Sequential(
             nn.Conv2d(256, 384, kernel_size=3, stride=1, padding=1),
@@ -46,10 +48,10 @@ class AlexNet(nn.Module):
         self.conv5 = nn.Sequential(
             nn.Conv2d(384, 256, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=3, stride=2)  # 修改pool大小
         )
         self.fc = nn.Sequential(
-            nn.Linear(256*4*4, 4096),
+            nn.Linear(256*6*6, 4096),  # 修改输入维度为256*6*6
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(4096, 4096),
@@ -88,25 +90,31 @@ class AlexNet(nn.Module):
 # 定义数据预处理
 def kk_data_transform():
     return {
-        'train': transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize(mean, std)]),
-        'valid': transforms.Compose([transforms.ToTensor(), 
+        'train': transforms.Compose([transforms.RandomResizedCrop(256),
+                                     transforms.CenterCrop(224),
+                                     transforms.RandomHorizontalFlip(),
+                                     transforms.RandomRotation(15),
+                                     transforms.ToTensor(),
+                                     transforms.Normalize(mean, std)]),
+        'valid': transforms.Compose([transforms.Resize(256),
+                                     transforms.CenterCrop(224),
+                                     transforms.ToTensor(), 
                                      transforms.Normalize(mean, std)])
     }
 
 
 class Config(object):
     def __init__(self):
-        self.num_epochs = 200
+        self.num_epochs = 500
         self.lr = 0.001
-        self.device = get_device()
-        self.patience = 500
+        self.device = "cuda:1"
+        self.patience = 1000
         self.save_path = os.path.join(parent_dir, "models", "AlexNet")
         self.logs_path = os.path.join(parent_dir, "logs", "AlexNet")
         self.plot_titles = "AlexNet"
-        self.batch_size = 512
-        self.class_list = text_labels_cifar10
-        self.dataset_name = "CIFAR10"
+        self.batch_size = 256
+        self.class_list = text_labels_fashion_mnist
+        self.dataset_name = "FashionMNIST"
 
     def __call__(self):
         return self.num_epochs, self.lr, self.device, self.patience, self.save_path, self.logs_path, self.plot_titles, self.class_list
@@ -114,18 +122,18 @@ class Config(object):
 if __name__ == "__main__":
     config = Config()
     # 数据加载
-    data_path = os.path.join(parent_dir, "data", "CIFAR10")
-    train_loader,test_loader = kk_load_data(data_path, batch_size=config.batch_size, DataSets=CIFAR10, transform=kk_data_transform(), num_works=4)
+    data_path = os.path.join(parent_dir, "data", "FashionMNIST")
+    train_loader,test_loader = kk_load_data(data_path, batch_size=config.batch_size, DataSets=FashionMNIST, transform=kk_data_transform(), num_works=4)
 
     
     # 模型定义
-    model = AlexNet(in_channels=3, num_classes=10)
+    model = AlexNet(in_channels=1, num_classes=10)
    
    # 定义损失函数和优化器C
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.lr)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=70,  min_lr=1e-6)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100,  min_lr=1e-5)
 
     # 模型训练
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)
