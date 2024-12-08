@@ -287,25 +287,11 @@ def kk_load_data(dataset_path, batch_size, DataSets, transform, num_works=4):
     return train_loader, test_loader
 
 
-def kk_loader_train(root_path, batch_size, split_ratio=0.9, resize=None,
-                    is_Crop=False, is_Horizontal=False, is_Vertical=False, crop_size=None, crop_padding=None,
-                    mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)):
+def kk_loader_train(root_path, batch_size, split_ratio=0.9, num_workers=4, transform=None):
     """构建自有数据集的训练集和验证集生成器"""
 
-    # 数据预处理设置
-    trans = [transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
-    if is_Vertical:
-        trans.insert(0, transforms.RandomVerticalFlip())  # 垂直翻转
-    if is_Horizontal:
-        trans.insert(0, transforms.RandomHorizontalFlip())  # 水平翻转
-    if is_Crop:
-        trans.insert(0, transforms.RandomCrop(size=crop_size, padding=crop_padding))  # 随机裁剪
-    if resize:
-        trans.insert(0, transforms.Resize(resize))
-    trans = transforms.Compose(trans)
-
     # 加载数据并预处理
-    dataset = ImageFolder(root=root_path, transform=trans)
+    dataset = ImageFolder(root=root_path, transform=transform)
 
     # 划分训练集和验证集
     train_data, valid_data = data.random_split(dataset,
@@ -314,27 +300,23 @@ def kk_loader_train(root_path, batch_size, split_ratio=0.9, resize=None,
 
     print(f'训练集大小: {len(train_data)}, 验证集大小: {len(valid_data)}')
     # 生成训练集的验证集数据生成器
-    train_iter = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=0)
-    valid_iter = data.DataLoader(valid_data, batch_size=batch_size, shuffle=True, num_workers=0)
+    prefetch_factor = 2 if num_workers == 0 else num_workers * batch_size
+    train_iter = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers, prefetch_factor=prefetch_factor)
+    valid_iter = data.DataLoader(valid_data, batch_size=batch_size, shuffle=True, num_workers=num_workers, prefetch_factor=prefetch_factor)
 
     return train_iter, valid_iter
 
 
-def kk_loader_test(root_path, batch_size, resize=None, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)):
+def kk_loader_test(root_path, batch_size, num_workers=4, transform=None):
     """构建自有数据集的测试集生成器"""
 
-    # 数据预处理设置
-    trans = [transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
-    if resize:
-        trans.insert(0, transforms.Resize(resize))
-    trans = transforms.Compose(trans)
-
     # 加载数据
-    dataset = ImageFolder(root=root_path, transform=trans)
+    dataset = ImageFolder(root=root_path, transform=transform)
     print(f'测试数据集大小: {len(dataset)}')
 
     # 生成测试集生成器
-    test_iter = data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    prefetch_factor = 2 if num_workers == 0 else num_workers * batch_size
+    test_iter = data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, prefetch_factor=prefetch_factor)
     return test_iter
 
 

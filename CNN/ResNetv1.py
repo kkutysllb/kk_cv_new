@@ -202,6 +202,8 @@ class Config(object):
         self.patience = 1000
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
+        os.makedirs(self.save_path, exist_ok=True)
+        os.makedirs(self.logs_path, exist_ok=True)
         self.plot_titles = self.model_name
         self.class_list = text_labels_cifar10
         

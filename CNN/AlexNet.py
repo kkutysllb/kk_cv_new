@@ -111,6 +111,8 @@ class Config(object):
         self.patience = 1000
         self.save_path = os.path.join(parent_dir, "models", "AlexNet")
         self.logs_path = os.path.join(parent_dir, "logs", "AlexNet")
+        os.makedirs(self.save_path, exist_ok=True)
+        os.makedirs(self.logs_path, exist_ok=True)
         self.plot_titles = "AlexNet"
         self.batch_size = 256
         self.class_list = text_labels_fashion_mnist
