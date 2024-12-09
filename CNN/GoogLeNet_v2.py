@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import transforms
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10, FashionMNIST
 import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +21,10 @@ sys.path.append(root_dir)
 
 from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer
 from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import mean, std, text_labels_cifar10
+from kk_libraries.kk_constants import mean, std, text_labels_cifar10, text_labels_fashion_mnist
+
+mean=[0.5,]
+std=[0.5,]
 
 # Inception 模块
 class Inception2(nn.Module):
@@ -155,18 +158,18 @@ class GoogLeNetV2(nn.Module):
 class Config(object):
     def __init__(self):
         self.model_name = 'GoogLeNet_v2'
-        self.num_epochs = 200
-        self.in_channels = 3
+        self.num_epochs = 500
+        self.in_channels = 1
         self.num_classes = 10
         self.batch_size = 512
-        self.patience = 500
+        self.patience = 1000
         self.lr = 0.001
-        self.device = get_device()
+        self.device = "cuda:3"
         self.plot_titles = "GoogLeNet_v2"
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
-        self.class_list = text_labels_cifar10
-        self.dataset_name = "CIFAR10"
+        self.class_list = text_labels_fashion_mnist
+        self.dataset_name = "FashionMNIST"
 
     def __call__(self):
         return self.model_name, self.cfg, self.in_channels, self.num_classes, \
@@ -213,7 +216,7 @@ if __name__ == "__main__":
     config = Config()
 
     # 数据加载
-    train_loader, valid_loader = kk_load_data(os.path.join(root_dir, 'data', "CIFAR10"), config.batch_size, CIFAR10, kk_data_transform(), num_works=4)
+    train_loader, valid_loader = kk_load_data(os.path.join(root_dir, 'data', "FashionMNIST"), config.batch_size, FashionMNIST, kk_data_transform(), num_works=4)
     # 模型定义
     model = GoogLeNetV2(config.in_channels, config.num_classes)
 

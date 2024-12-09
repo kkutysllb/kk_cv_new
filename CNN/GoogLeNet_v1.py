@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.transforms as transforms
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10, FashionMNIST
 import os
 import sys
 
@@ -21,7 +21,10 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
 from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer
 from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import text_labels_cifar10, mean, std
+from kk_libraries.kk_constants import text_labels_cifar10, text_labels_fashion_mnist
+
+mean=[0.5,]
+std=[0.5,]
 
 
 # 定义inception块
@@ -126,18 +129,18 @@ class Config(object):
     """配置类"""
     def __init__(self):
         self.vgg_name = 'GoogLeNet_v1'
-        self.num_epochs = 200
-        self.in_channels = 3
+        self.num_epochs = 500
+        self.in_channels = 1
         self.num_classes = 10
         self.batch_size = 512
         self.patience = 500
         self.lr = 0.001
-        self.device = get_device()
+        self.device = "cuda:2"
         self.plot_titles = "GoogLeNet_v1"
         self.save_path = os.path.join(root_dir, 'models', self.vgg_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.vgg_name)
-        self.class_list = text_labels_cifar10
-        self.dataset_name = "CIFAR10"
+        self.class_list = text_labels_fashion_mnist
+        self.dataset_name = "FashionMNIST"
     
     def __call__(self):
         return self.vgg_name, self.cfg, self.in_channels, self.num_classes, self.batch_size, self.patience, self.lr, self.device, self.save_path, self.logs_path, self.plot_titles
@@ -165,7 +168,7 @@ if __name__ == "__main__":
     config = Config()
 
     # 数据加载
-    train_loader, valid_loader = kk_load_data(os.path.join(root_dir, 'data', "CIFAR10"), config.batch_size, CIFAR10, kk_data_transform(), num_works=4)
+    train_loader, valid_loader = kk_load_data(os.path.join(root_dir, 'data', "FashionMNIST"), config.batch_size, FashionMNIST, kk_data_transform(), num_works=4)
 
     # 模型定义
     model = GoogLeNet(config.in_channels, config.num_classes)
@@ -173,7 +176,7 @@ if __name__ == "__main__":
     # 损失函数，优化器，学习率
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=config.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=3e-6)
 
     # 模型训练
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)

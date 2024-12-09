@@ -133,7 +133,7 @@ def kk_data_transform():
 
 class Config(object):
     def __init__(self):
-        self.num_epochs = 200
+        self.num_epochs = 500
         self.lr = 0.01
         self.device = get_device()
         self.patience = 500

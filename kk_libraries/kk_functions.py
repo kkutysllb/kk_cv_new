@@ -549,8 +549,8 @@ class kk_ImageClassifierTrainer:
                 self.optimizer.step()
                 with torch.no_grad():
                     metrics.add(loss * inputs.shape[0], kk_accuracy(outputs, labels), inputs.shape[0])
-                # 每10个batch做一次验证集评估
-                if self.batch_counter % 10 == 0:
+                # 每100个batch做一次验证集评估
+                if self.batch_counter % 100 == 0:
                     # 学习率
                     self.LRs.append(self.optimizer.param_groups[0]['lr'])
                     epoch_loss = metrics[0] / metrics[2]

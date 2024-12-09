@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10, FashionMNIST
 import os
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,9 +21,10 @@ sys.path.append(parent_dir)
 
 from kk_libraries.kk_dataprocess import kk_load_data
 from kk_libraries.kk_functions import kk_ImageClassifierTrainer, get_device
-from kk_libraries.kk_constants import text_labels_cifar10, mean, std
+from kk_libraries.kk_constants import text_labels_cifar10, text_labels_fashion_mnist
 
-
+mean = [0.5, ]
+std = [0.5, ]
 vgg_cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -115,18 +116,20 @@ class Config(object):
     def __init__(self):
         self.vgg_name = 'VGG16'
         self.cfg = vgg_cfg
-        self.num_epochs = 200
-        self.in_channels = 3
+        self.num_epochs = 500
+        self.in_channels = 1
         self.num_classes = 10
-        self.batch_size = 512
-        self.patience = None
+        self.batch_size = 256
+        self.patience = 30
         self.lr = 0.001
-        self.device = get_device()
+        self.device = "cuda:1"
         self.plot_titles = "VGG16_KAN"
         self.save_path = os.path.join(parent_dir, 'models', self.plot_titles)
         self.logs_path = os.path.join(parent_dir, 'logs', self.plot_titles)
-        self.class_list = text_labels_cifar10
-        self.dataset_name = "CIFAR10"
+        os.makedirs(self.save_path, exist_ok=True)
+        os.makedirs(self.logs_path, exist_ok=True)
+        self.class_list = text_labels_fashion_mnist
+        self.dataset_name = "FashionMNIST"
     def __call__(self):
         return self.vgg_name, self.cfg, self.in_channels, self.num_classes, self.batch_size, self.patience, self.lr, self.device, self.save_path, self.logs_path, self.plot_titles
     
@@ -134,10 +137,16 @@ def kk_data_transform():
     """数据变换"""
     return {
         'train': transforms.Compose([
+            transforms.RandomResizedCrop(256),
+            transforms.CenterCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(15),
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
         ]),
         'valid': transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
         ])
@@ -147,7 +156,7 @@ def kk_data_transform():
 if __name__ == "__main__":
     config = Config()
     # 数据加载
-    train_loader, valid_loader = kk_load_data(os.path.join(parent_dir, 'data', 'CIFAR10'), config.batch_size, CIFAR10, kk_data_transform(), num_works=4)
+    train_loader, valid_loader = kk_load_data(os.path.join(parent_dir, 'data', 'FashionMNIST'), config.batch_size, FashionMNIST, kk_data_transform(), num_works=4)
 
     # 模型实例
     
@@ -155,10 +164,10 @@ if __name__ == "__main__":
 
     # 损失函数，优化器，学习率调度器
     criterion = nn.CrossEntropyLoss()
-    # optimizer = optim.SGD(model.parameters(), lr=config.lr, weight_decay=5e-4, momentum=0.9, nesterov=True)
-    optimizer = optim.AdamW(model.parameters(), lr=config.lr)
+    optimizer = optim.AdamW(model.parameters(), lr=config.lr, weight_decay=0)
+    # optimizer = optim.SGD(model.parameters(), lr=config.lr)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=3e-6)
 
     # 训练模型
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=scheduler)

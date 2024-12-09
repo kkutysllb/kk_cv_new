@@ -107,8 +107,8 @@ class Config(object):
     def __init__(self):
         self.num_epochs = 500
         self.lr = 0.001
-        self.device = "cuda:1"
-        self.patience = 1000
+        self.device = "cuda:2"
+        self.patience = 30
         self.save_path = os.path.join(parent_dir, "models", "AlexNet")
         self.logs_path = os.path.join(parent_dir, "logs", "AlexNet")
         os.makedirs(self.save_path, exist_ok=True)
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.lr)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100,  min_lr=1e-5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20,  min_lr=1e-5)
 
     # 模型训练
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)
