@@ -120,7 +120,7 @@ class Config(object):
         self.in_channels = 1
         self.num_classes = 10
         self.batch_size = 256
-        self.patience = 30
+        self.patience = 60
         self.lr = 0.001
         self.device = "cuda:1"
         self.plot_titles = "VGG16_KAN"
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     optimizer = optim.AdamW(model.parameters(), lr=config.lr, weight_decay=0)
     # optimizer = optim.SGD(model.parameters(), lr=config.lr)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=3e-6)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=25, min_lr=3e-6)
 
     # 训练模型
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=scheduler)

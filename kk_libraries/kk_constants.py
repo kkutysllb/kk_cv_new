@@ -404,3 +404,19 @@ text_labels_stanford_cars = [
     'Volvo XC90 SUV 2007',
     'smart fortwo Convertible 2012'
 ]
+
+
+text_labels_frutis100 = ['abiu', 'acai', 'acerola', 'ackee', 'ambarella', 'apple', 'apricot', 'avocado', 'banana', 
+                         'barbadine', 'barberry', 'betel_nut', 'bitter_gourd', 'black_berry', 'black_mullberry', 
+                         'brazil_nut', 'camu_camu', 'cashew', 'cempedak', 'chenet', 'cherimoya', 'chico', 'chokeberry',
+                         'cluster_fig', 'coconut', 'corn_kernel', 'cranberry', 'cupuacu', 'custard_apple', 'damson', 
+                         'dewberry', 'dragonfruit', 'durian', 'eggplant', 'elderberry', 'emblic', 'feijoa', 'fig',
+                         'finger_lime', 'gooseberry', 'goumi', 'grape', 'grapefruit', 'greengage', 'grenadilla', 
+                         'guava', 'hard_kiwi', 'hawthorn', 'hog_plum', 'horned_melon', 'indian_strawberry', 'jaboticaba', 
+                         'jackfruit', 'jalapeno', 'jamaica_cherry', 'jambul', 'jocote', 'jujube', 'kaffir_lime', 'kumquat', 
+                         'lablab', 'langsat', 'longan', 'mabolo', 'malay_apple', 'mandarine', 'mango', 'mangosteen',
+                         'medlar', 'mock_strawberry', 'morinda', 'mountain_soursop', 'oil_palm', 'olive', 'otaheite_apple', 
+                         'papaya', 'passion_fruit', 'pawpaw', 'pea', 'pineapple', 'plumcot', 'pomegranate', 'prikly_pear', 'quince',
+                         'rambutan', 'raspberry', 'redcurrant', 'rose_hip', 'rose_leaf_bramble', 'salak', 'santol', 'sapodilla',
+                         'sea_buckthorn', 'strawberry_guava', 'sugar_apple', 'taxus_baccata', 'ugli_fruit', 'white_currant', 
+                         'yali_pear', 'yellow_plum']
