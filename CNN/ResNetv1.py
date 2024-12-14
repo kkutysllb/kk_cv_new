@@ -187,7 +187,7 @@ class Config(object):
         self.num_epochs = 500
         self.lr = 0.001
         self.batch_size = 128
-        self.device = "cuda:0"
+        self.device = "cuda:5"
         self.in_channels = 3
         if self.dataset_name == "Food101":
             self.num_classes = 101
@@ -242,20 +242,20 @@ def kk_data_transform(mean, std):
 
 def kk_loader_train(root_path, batch_size, num_workers=4, transform=None):
     dataset = ImageFolder(root=root_path, transform=transform)
-    prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
-    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, prefetch_factor=prefetch_factor)
+    # prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
+    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     return train_loader
 
 def kk_loader_valid(root_path, batch_size, num_workers=4, transform=None):
     dataset = ImageFolder(root=root_path, transform=transform)
-    prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
-    valid_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, prefetch_factor=prefetch_factor)
+    # prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
+    valid_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return valid_loader
 
 def kk_loader_test(root_path, batch_size, num_workers=4, transform=None):
     dataset = ImageFolder(root=root_path, transform=transform)
-    prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
-    test_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, prefetch_factor=prefetch_factor)
+    # prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
+    test_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return test_loader
 
 if __name__ == "__main__":
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     model_resnet = ResNet_V1(Bottleneck, [3, 4, 23, 3], num_classes=config.num_classes)
     # 损失函数、优化器、调度器
     criterion = kk_LabelSmoothingCrossEntropy()
-    optimizer = optim.Adam(model_resnet.parameters(), lr=config.lr, weight_decay=1e-4)
+    optimizer = optim.AdamW(model_resnet.parameters(), lr=config.lr, weight_decay=1e-4)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, min_lr=3e-6)
 
     # 训练  
