@@ -30,17 +30,17 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
 import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
 
-from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer, kk_LabelSmoothingCrossEntropy
-from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import text_labels_cifar10
+from kk_libraries.kk_functions import kk_ImageClassifierTrainer, kk_LabelSmoothingCrossEntropy
+from kk_libraries.kk_dataprocess import kk_loader_train, kk_loader_test, kk_get_data_mean_stdv2
+from kk_libraries.kk_constants import text_labels_frutis100
 
-mean = [0.5, 0.5, 0.5]
-std = [0.5, 0.5, 0.5]
 
 
 # 定义BasicBlock  18，34基础残差块
@@ -182,12 +182,12 @@ class ResNet_V1(nn.Module):
 # 定义配置类
 class Config(object):
     def __init__(self): 
-        self.model_name = 'ResNet_V1_152'
+        self.model_name = 'ResNet_V1_50'
         self.dataset_name = "CIFAR10"
         self.num_epochs = 500
         self.lr = 0.001
-        self.batch_size = 128
-        self.device = "cuda:0"
+        self.batch_size = 256
+        self.device = get_device()
         self.in_channels = 3
         if self.dataset_name == "Food101":
             self.num_classes = 101
@@ -199,13 +199,14 @@ class Config(object):
             self.num_classes = 196
         else:
             self.num_classes = 10
-        self.patience = 300
+        self.patience = 1000
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
         os.makedirs(self.save_path, exist_ok=True)
         os.makedirs(self.logs_path, exist_ok=True)
         self.plot_titles = self.model_name
-        self.class_list = text_labels_cifar10
+        self.class_list = text_labels_frutis100
+        self.mean, _, self.std = kk_get_data_mean_stdv2(os.path.join(root_dir, 'data', 'frutis100'))
         
 
     def __call__(self):
@@ -213,8 +214,9 @@ class Config(object):
                self.patience, self.lr, self.device, self.save_path, self.logs_path, self.plot_titles, \
                self.class_list, self.dataset_name
 
-def kk_data_transform():
+def kk_data_transform(mean, std):
     """数据预处理"""
+    mean, _, std = kk_get_data_mean_stdv2(os.path.join(root_dir, 'data', 'frutis100'))
     return  {
         'train': transforms.Compose([
             transforms.Resize(256),
@@ -229,28 +231,54 @@ def kk_data_transform():
             transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
+        ]),
+        'test': transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std)
         ])
     }
+
+def kk_loader_train(root_path, batch_size, num_workers=4, transform=None):
+    dataset = ImageFolder(root=root_path, transform=transform)
+    # prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
+    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    return train_loader
+
+def kk_loader_valid(root_path, batch_size, num_workers=4, transform=None):
+    dataset = ImageFolder(root=root_path, transform=transform)
+    # prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
+    valid_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    return valid_loader
+
+def kk_loader_test(root_path, batch_size, num_workers=4, transform=None):
+    dataset = ImageFolder(root=root_path, transform=transform)
+    # prefetch_factor = 2 if num_workers == 0 else batch_size * num_workers
+    test_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    return test_loader
 
 if __name__ == "__main__":
     config = Config()
 
     # 数据加载
-    train_loader, test_loader = kk_load_data(os.path.join(root_dir, 'data', 'CIFAR10'), config.batch_size, CIFAR10, kk_data_transform())
+    train_loader = kk_loader_train(os.path.join(root_dir, 'data', 'frutis100', 'train'), config.batch_size, num_workers=4, transform=kk_data_transform(config.mean, config.std)['train'])
+    valid_loader = kk_loader_valid(os.path.join(root_dir, 'data', 'frutis100', 'val'), config.batch_size, num_workers=4, transform=kk_data_transform(config.mean, config.std)['valid'])
+    test_loader = kk_loader_test(os.path.join(root_dir, 'data', 'frutis100', 'test'), config.batch_size, num_workers=4, transform=kk_data_transform(config.mean, config.std)['test'])
 
 
     # 模型初始化
-    model_resnet = ResNet_V1(Bottleneck, [3, 8, 36, 3],num_classes=config.num_classes)
+    model_resnet = ResNet_V1(Bottleneck, [3, 4, 6, 3], num_classes=config.num_classes)
     # 损失函数、优化器、调度器
     criterion = kk_LabelSmoothingCrossEntropy()
-    optimizer = optim.AdamW(model_resnet.parameters(), lr=config.lr, weight_decay=5e-4)
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
+    optimizer = optim.SGD(model_resnet.parameters(), lr=config.lr, momentum=0.9)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
 
     # 训练  
-    trainer = kk_ImageClassifierTrainer(config, model_resnet, criterion, optimizer, scheduler=None)
+    trainer = kk_ImageClassifierTrainer(config, model_resnet, criterion, optimizer, scheduler)
     trainer.train_iter(train_loader, test_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
     # 测试
     trainer.test(test_loader)
-
+ 

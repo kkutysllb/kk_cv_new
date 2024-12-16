@@ -36,7 +36,9 @@ sys.path.append(root_dir)
 
 from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer
 from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import text_labels_cifar10, mean, std
+from kk_libraries.kk_constants import text_labels_cifar10
+mean = [0.5, 0.5, 0.5]
+std = [0.5, 0.5, 0.5]
 
 
 # 定义BasicBlock  18，34基础残差块
@@ -94,7 +96,6 @@ class Bottleneck(nn.Module):
 
     def forward(self, x):
         identity = x
-
         out = self.bn1(x)
         out = self.relu(out)
         # 如果需要下采样，在ReLU之后进行
@@ -111,7 +112,6 @@ class Bottleneck(nn.Module):
         out = self.conv3(out)
 
         out += identity
-
         return out
 
 
@@ -196,11 +196,11 @@ class ResNet_V2(nn.Module):
 # 定义配置类
 class Config(object):
     def __init__(self): 
-        self.model_name = 'ResNet_V2_50'
-        self.num_epochs = 500
+        self.model_name = 'ResNet_V2_18'
+        self.num_epochs = 200
         self.lr = 0.001
-        self.batch_size = 128
-        self.device = "cuda:1"
+        self.batch_size = 512
+        self.device = get_device()
         self.in_channels = 3
         self.num_classes = 10
         self.patience = 300
@@ -242,15 +242,15 @@ if __name__ == "__main__":
     train_loader, test_loader = kk_load_data(os.path.join(root_dir, 'data', 'CIFAR10'), config.batch_size, CIFAR10, kk_data_transform())
 
     # 模型初始化
-    model_resnet = ResNet_V2(Bottleneck, [3, 4, 6, 3])
+    model_resnet18 = ResNet_V2(BasicBlock, [2, 2, 2, 2])
     # 损失函数、优化器、调度器
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model_resnet.parameters(), lr=config.lr)
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
+    optimizer = optim.AdamW(model_resnet18.parameters(), lr=config.lr)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5)
 
     # 训练  
-    trainer = kk_ImageClassifierTrainer(config, model_resnet, criterion, optimizer, scheduler=None)
-    trainer.train_iter(train_loader, test_loader)
+    trainer = kk_ImageClassifierTrainer(config, model_resnet18, criterion, optimizer, scheduler)
+    trainer.train_model(train_loader, test_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
     # 测试

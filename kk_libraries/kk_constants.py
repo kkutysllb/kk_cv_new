@@ -406,6 +406,7 @@ text_labels_stanford_cars = [
 ]
 
 
+<<<<<<< HEAD
 text_labels_mini_imagenet100 = ['analog clock', 'backpack, back pack, knapsack, packsack, rucksack, haversack', 
                                 'ballpoint, ballpoint pen, ballpen, Biro', 'Band Aid', 'barbell', 'barber chair', 
                                 'beer bottle', 'beer glass', 'binoculars, field glasses, opera glasses', 
@@ -437,3 +438,19 @@ text_labels_mini_imagenet100 = ['analog clock', 'backpack, back pack, knapsack, 
                                 'pot, flowerpot', 'power drill', 'printer', 'projector', 'purse',
                                 'radiator', 'radio, wireless', 'reflex camera', 'remote control, remote',
                                 'rubber eraser, rubber, pencil eraser', 'toilet tissue, toilet paper, bathroom tissue']
+=======
+text_labels_frutis100 = ['abiu', 'acai', 'acerola', 'ackee', 'ambarella', 'apple', 'apricot', 'avocado', 'banana', 
+                         'barbadine', 'barberry', 'betel_nut', 'bitter_gourd', 'black_berry', 'black_mullberry', 
+                         'brazil_nut', 'camu_camu', 'cashew', 'cempedak', 'chenet', 'cherimoya', 'chico', 'chokeberry',
+                         'cluster_fig', 'coconut', 'corn_kernel', 'cranberry', 'cupuacu', 'custard_apple', 'damson', 
+                         'dewberry', 'dragonfruit', 'durian', 'eggplant', 'elderberry', 'emblic', 'feijoa', 'fig',
+                         'finger_lime', 'gooseberry', 'goumi', 'grape', 'grapefruit', 'greengage', 'grenadilla', 
+                         'guava', 'hard_kiwi', 'hawthorn', 'hog_plum', 'horned_melon', 'indian_strawberry', 'jaboticaba', 
+                         'jackfruit', 'jalapeno', 'jamaica_cherry', 'jambul', 'jocote', 'jujube', 'kaffir_lime', 'kumquat', 
+                         'lablab', 'langsat', 'longan', 'mabolo', 'malay_apple', 'mandarine', 'mango', 'mangosteen',
+                         'medlar', 'mock_strawberry', 'morinda', 'mountain_soursop', 'oil_palm', 'olive', 'otaheite_apple', 
+                         'papaya', 'passion_fruit', 'pawpaw', 'pea', 'pineapple', 'plumcot', 'pomegranate', 'prikly_pear', 'quince',
+                         'rambutan', 'raspberry', 'redcurrant', 'rose_hip', 'rose_leaf_bramble', 'salak', 'santol', 'sapodilla',
+                         'sea_buckthorn', 'strawberry_guava', 'sugar_apple', 'taxus_baccata', 'ugli_fruit', 'white_currant', 
+                         'yali_pear', 'yellow_plum']
+>>>>>>> b9cb91d417901d61ab33b325698eb5cefa242b2a

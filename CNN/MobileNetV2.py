@@ -119,13 +119,13 @@ class MobileNetV2(nn.Module):
 class Config(object):
     def __init__(self): 
         self.model_name = 'MobileNetV2'
-        self.num_epochs = 200
+        self.num_epochs = 500
         self.lr = 0.001
-        self.batch_size = 512
-        self.device = get_device()
+        self.batch_size = 128
+        self.device = "cuda:6"
         self.in_channels = 3
         self.num_classes = 10
-        self.patience = None
+        self.patience = 300
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
         self.plot_titles = self.model_name
@@ -148,7 +148,7 @@ def kk_data_transform():
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
         ]),
-        'test': transforms.Compose([
+        'valid': transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
@@ -168,12 +168,12 @@ if __name__ == "__main__":
     
     # 损失函数、优化器、调度器
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=config.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5)
+    optimizer = optim.AdamW(model.parameters(), lr=config.lr, weight_decay=1e-4)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5)
 
     # 训练  
-    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)
-    trainer.train_model(train_loader, test_loader)
+    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=None)
+    trainer.train_iter(train_loader, test_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
     # 测试

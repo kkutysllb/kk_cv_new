@@ -20,6 +20,8 @@ from PIL import Image
 import os
 from shutil import copy
 from .kk_functions import kk_Accumulator, kk_accuracy
+from modelscope.msdatasets import MsDataset
+
 
 """
 自定义数据预处理方法
@@ -281,8 +283,14 @@ def kk_load_data(dataset_path, batch_size, DataSets, transform, num_works=4):
         data_test = DataSets(root=dataset_path, train=False, transform=transform['valid'], download=True)
 
     # 创建数据加载器
+<<<<<<< HEAD
     train_loader = DataLoader(dataset=data_train, batch_size=batch_size, shuffle=True, num_workers=num_works)
     test_loader = DataLoader(dataset=data_test, batch_size=batch_size, shuffle=False, num_workers=num_works)
+=======
+    prefetch_factor = 2 if num_works == 0 else num_works * batch_size
+    train_loader = DataLoader(dataset=data_train, batch_size=batch_size, shuffle=True, num_workers=num_works, prefetch_factor=prefetch_factor)
+    test_loader = DataLoader(dataset=data_test, batch_size=batch_size, shuffle=False, num_workers=num_works, prefetch_factor=prefetch_factor)
+>>>>>>> b9cb91d417901d61ab33b325698eb5cefa242b2a
     
     return train_loader, test_loader
 
@@ -447,3 +455,17 @@ def kk_predict_images_labels(model, data_path, text_labels, device, resize=None,
             pre_lab = torch.argmax(output, dim=1)
             result = pre_lab.item()
         print("预测值：", text_labels[result])
+
+
+def kk_get_modelscope_train_data(data_dir,split_ratio, batch_size, transform, num_workers=4):
+    """获取模型scope训练数据"""
+    train_dataset = MsDataset.load('tany0699/mini_imagenet100', subset_name='default', split='train', data_dir=data_dir, transform=transform)
+    # 划分训练集和验证集
+    train_data, valid_data = data.random_split(train_dataset,
+                                               (round(split_ratio * len(train_dataset)),
+                                                round((1.0 - split_ratio) * len(train_dataset))))
+
+    prefetch_factor = 2 if num_workers == 0 else num_workers * batch_size
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, prefetch_factor=prefetch_factor)
+    valid_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=True, num_workers=4, prefetch_factor=prefetch_factor)
+    return train_loader, valid_loader
