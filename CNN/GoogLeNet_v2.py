@@ -161,10 +161,10 @@ class Config(object):
         self.num_epochs = 500
         self.in_channels = 1
         self.num_classes = 10
-        self.batch_size = 512
-        self.patience = 1000
+        self.batch_size = 256
+        self.patience = 30
         self.lr = 0.001
-        self.device = "cuda:3"
+        self.device = "cuda:1"
         self.plot_titles = "GoogLeNet_v2"
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     # 损失函数，优化器，学习率
     criterion = LabelSmoothingCrossEntropy(smoothing=0.05)
     optimizer = optim.AdamW(model.parameters(), lr=config.lr, weight_decay=5e-4)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5) 
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=16, min_lr=3e-6) 
 
     # 训练
     trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)

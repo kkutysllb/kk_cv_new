@@ -16,11 +16,11 @@ from torchvision.datasets import CIFAR10
 from torchvision import transforms
 import sys
 import os
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(parent_dir)
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root_dir)
 from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer
-from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import text_labels_cifar10, mean, std
+from kk_libraries.kk_dataprocess import kk_load_data, kk_loader_train, kk_loader_test, kk_get_data_mean_stdv2
+from kk_libraries.kk_constants import text_labels_cifar10, mean, std, text_labels_mini_imagenet100
 
 
 class KnowledgeAttention(nn.Module):
@@ -42,19 +42,19 @@ class KnowledgeAttention(nn.Module):
 
 
 class AlexNet_KAN(nn.Module):
-    def __init__(self, in_channels=3, num_classes=10):
+    def __init__(self, in_channels=3, num_classes=100):
         super(AlexNet_KAN, self).__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, 96, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels, 96, kernel_size=11, stride=4, padding=2),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=3, stride=2)
         )
         self.ka1 = KnowledgeAttention(96)
 
         self.conv2 = nn.Sequential(
-            nn.Conv2d(96, 256, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(96, 256, kernel_size=5, stride=1, padding=2),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=3, stride=2)
         )
         self.ka2 = KnowledgeAttention(256)
 
@@ -73,12 +73,12 @@ class AlexNet_KAN(nn.Module):
         self.conv5 = nn.Sequential(
             nn.Conv2d(384, 256, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=3, stride=2)
         )
         self.ka5 = KnowledgeAttention(256)
 
         self.fc = nn.Sequential(
-            nn.Linear(256*4*4, 4096),
+            nn.Linear(256 * 6 * 6, 4096),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(4096, 4096),
@@ -129,41 +129,60 @@ def kk_data_transform():
         'valid': transforms.Compose([transforms.ToTensor(), 
                                      transforms.Normalize(mean, std)])
     }
+    
+
+def kk_train_data_transform():
+    mean, _, std = kk_get_data_mean_stdv2(os.path.join(root_dir, "data", "mini_imagenet100"))
+    return transforms.Compose([transforms.RandomResizedCrop(256),
+                             transforms.CenterCrop(224),
+                             transforms.RandomHorizontalFlip(0.5),
+                             transforms.RandomRotation(15),
+                             transforms.ToTensor(), 
+                             transforms.Normalize(mean, std)])
+    
+def kk_test_data_transform():
+    mean, _, std = kk_get_data_mean_stdv2(os.path.join(root_dir, "data", "mini_imagenet100"))
+    return transforms.Compose([transforms.Resize(256),
+                             transforms.CenterCrop(224),
+                             transforms.ToTensor(), 
+                             transforms.Normalize(mean, std)])
 
 
 class Config(object):
     def __init__(self):
         self.num_epochs = 500
         self.lr = 0.01
-        self.device = get_device()
-        self.patience = 500
-        self.save_path = os.path.join(parent_dir, "models", "AlexNet_KAN")
-        self.logs_path = os.path.join(parent_dir, "logs", "AlexNet_KAN")
+        self.device = "cuda:1"
+        self.patience = 300
+        self.save_path = os.path.join(root_dir, "models", "AlexNet_KAN")
+        self.logs_path = os.path.join(root_dir, "logs", "AlexNet_KAN")
         self.plot_titles = "AlexNet_KAN"
-        self.class_list = text_labels_cifar10
-        self.dataset_name = "CIFAR10"
+        self.class_list = text_labels_mini_imagenet100
+        self.dataset_name = "mini_imagenet100"
+        self.batch_size = 256
 
     def __call__(self):
         return self.num_epochs, self.lr, self.device, self.patience, self.save_path, self.logs_path, self.plot_titles, self.class_list, self.dataset_name
 
 if __name__ == "__main__":
-    # 数据加载
-    data_path = os.path.join(parent_dir, "data“， ”CIFAR10")
-    train_loader,test_loader = kk_load_data(data_path, batch_size=512, DataSets=CIFAR10, transform=kk_data_transform())
-
     config = Config()
+    # 数据加载
+    train_loader, valid_loader = kk_loader_train(os.path.join(root_dir, "data", "mini_imagenet100", "train"), config.batch_size, transform=kk_train_data_transform())
+    test_loader = kk_loader_test(os.path.join(root_dir, "data", "mini_imagenet100", "val"), config.batch_size, transform=kk_test_data_transform())
+
+    
     # 模型定义
-    model = AlexNet_KAN(in_channels=3, num_classes=10)
+    model = AlexNet_KAN(in_channels=3, num_classes=100)
    
    # 定义损失函数和优化器C
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=config.lr, weight_decay=5e-4)
+    optimizer = optim.SGD(model.parameters(), lr=config.lr, momentum=0.9)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=70, min_lr=1e-6)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=30, min_lr=3e-6)
 
     # 模型训练
-    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=scheduler)
-    trainer.train_iter(train_loader, test_loader)
+    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=None)
+    trainer.train_iter(train_loader, valid_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
     # 模型测试

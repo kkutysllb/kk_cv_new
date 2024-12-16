@@ -15,11 +15,11 @@ from torchvision.datasets import FashionMNIST
 from torchvision import transforms
 import sys
 import os
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(parent_dir)
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root_dir)
 from kk_libraries.kk_functions import get_device, kk_ImageClassifierTrainer
-from kk_libraries.kk_dataprocess import kk_load_data
-from kk_libraries.kk_constants import text_labels_fashion_mnist
+from kk_libraries.kk_dataprocess import kk_load_data, kk_loader_train, kk_loader_test, kk_get_data_mean_stdv2
+from kk_libraries.kk_constants import text_labels_fashion_mnist, text_labels_mini_imagenet100
 mean = [0.5, ]
 std = [0.5, ]
 
@@ -101,22 +101,40 @@ def kk_data_transform():
                                      transforms.ToTensor(), 
                                      transforms.Normalize(mean, std)])
     }
+    
+def kk_train_data_transform():
+    """数据预处理"""
+    mean, _, std = kk_get_data_mean_stdv2(os.path.join(root_dir, "data", "mini_imagenet100"))
+    return transforms.Compose([transforms.RandomResizedCrop(256),
+                                transforms.CenterCrop(224),
+                                transforms.RandomHorizontalFlip(0.5),
+                                transforms.RandomRotation(15),
+                                transforms.ToTensor(), 
+                                transforms.Normalize(mean, std)])
+
+def kk_test_data_transform():
+    """数据预处理"""
+    mean, _, std = kk_get_data_mean_stdv2(os.path.join(root_dir, "data", "mini_imagenet100"))
+    return transforms.Compose([transforms.Resize(256),
+                                transforms.CenterCrop(224),
+                                transforms.ToTensor(), 
+                                transforms.Normalize(mean, std)])
 
 
 class Config(object):
     def __init__(self):
         self.num_epochs = 500
-        self.lr = 0.001
-        self.device = "cuda:2"
-        self.patience = 30
-        self.save_path = os.path.join(parent_dir, "models", "AlexNet")
-        self.logs_path = os.path.join(parent_dir, "logs", "AlexNet")
+        self.lr = 0.01
+        self.device = "cuda:0"
+        self.patience = 300
+        self.save_path = os.path.join(root_dir, "models", "AlexNet")
+        self.logs_path = os.path.join(root_dir, "logs", "AlexNet")
         os.makedirs(self.save_path, exist_ok=True)
         os.makedirs(self.logs_path, exist_ok=True)
         self.plot_titles = "AlexNet"
         self.batch_size = 256
-        self.class_list = text_labels_fashion_mnist
-        self.dataset_name = "FashionMNIST"
+        self.class_list = text_labels_mini_imagenet100
+        self.dataset_name = "mini_imagenet100"
 
     def __call__(self):
         return self.num_epochs, self.lr, self.device, self.patience, self.save_path, self.logs_path, self.plot_titles, self.class_list
@@ -124,22 +142,23 @@ class Config(object):
 if __name__ == "__main__":
     config = Config()
     # 数据加载
-    data_path = os.path.join(parent_dir, "data", "FashionMNIST")
-    train_loader,test_loader = kk_load_data(data_path, batch_size=config.batch_size, DataSets=FashionMNIST, transform=kk_data_transform(), num_works=4)
-
+    # data_path = os.path.join(root_dir, "data", "FashionMNIST")
+    # train_loader,test_loader = kk_load_data(data_path, batch_size=config.batch_size, DataSets=FashionMNIST, transform=kk_data_transform(), num_works=4)
+    train_loader, valid_loader = kk_loader_train(os.path.join(root_dir, "data", "mini_imagenet100", "train"), config.batch_size, transform=kk_train_data_transform())
+    test_loader = kk_loader_test(os.path.join(root_dir, "data", "mini_imagenet100", "val"), config.batch_size, transform=kk_test_data_transform())
     
     # 模型定义
-    model = AlexNet(in_channels=1, num_classes=10)
+    model = AlexNet(in_channels=3, num_classes=100)
    
    # 定义损失函数和优化器C
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config.lr)
+    optimizer = optim.SGD(model.parameters(), lr=config.lr, momentum=0.9)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20,  min_lr=1e-5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=30,  min_lr=3e-6)
 
     # 模型训练
-    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler)
-    trainer.train_iter(train_loader, test_loader)
+    trainer = kk_ImageClassifierTrainer(config, model, criterion, optimizer, scheduler=None)
+    trainer.train_iter(train_loader, valid_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
     # 模型测试

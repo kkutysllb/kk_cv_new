@@ -196,14 +196,14 @@ class ResNet_V2(nn.Module):
 # 定义配置类
 class Config(object):
     def __init__(self): 
-        self.model_name = 'ResNet_V2_18'
-        self.num_epochs = 200
+        self.model_name = 'ResNet_V2_50'
+        self.num_epochs = 500
         self.lr = 0.001
-        self.batch_size = 512
-        self.device = get_device()
+        self.batch_size = 128
+        self.device = "cuda:1"
         self.in_channels = 3
         self.num_classes = 10
-        self.patience = None
+        self.patience = 300
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
         self.plot_titles = self.model_name
@@ -226,7 +226,7 @@ def kk_data_transform():
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
         ]),
-        'test': transforms.Compose([
+        'valid': transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
@@ -242,15 +242,15 @@ if __name__ == "__main__":
     train_loader, test_loader = kk_load_data(os.path.join(root_dir, 'data', 'CIFAR10'), config.batch_size, CIFAR10, kk_data_transform())
 
     # 模型初始化
-    model_resnet18 = ResNet_V2(BasicBlock, [2, 2, 2, 2])
+    model_resnet = ResNet_V2(Bottleneck, [3, 4, 6, 3])
     # 损失函数、优化器、调度器
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model_resnet18.parameters(), lr=config.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.55, patience=100, min_lr=1e-5)
+    optimizer = optim.AdamW(model_resnet.parameters(), lr=config.lr)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
 
     # 训练  
-    trainer = kk_ImageClassifierTrainer(config, model_resnet18, criterion, optimizer, scheduler)
-    trainer.train_model(train_loader, test_loader)
+    trainer = kk_ImageClassifierTrainer(config, model_resnet, criterion, optimizer, scheduler=None)
+    trainer.train_iter(train_loader, test_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
     # 测试

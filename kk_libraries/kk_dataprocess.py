@@ -80,7 +80,7 @@ def kk_get_data_mean_stdv2(image_dir):
         image_files = []
         for root, _, files in os.walk(image_dir):
             for file in files:
-                if file.endswith(('png', 'jpg', 'jpeg')):
+                if file.endswith(('png', 'jpg', 'jpeg', 'JPG', 'PNG', 'JPEG')):
                     image_files.append(os.path.join(root, file))
         return image_files
 
@@ -281,8 +281,8 @@ def kk_load_data(dataset_path, batch_size, DataSets, transform, num_works=4):
         data_test = DataSets(root=dataset_path, train=False, transform=transform['valid'], download=True)
 
     # 创建数据加载器
-    train_loader = DataLoader(dataset=data_train, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=data_test, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(dataset=data_train, batch_size=batch_size, shuffle=True, num_workers=num_works)
+    test_loader = DataLoader(dataset=data_test, batch_size=batch_size, shuffle=False, num_workers=num_works)
     
     return train_loader, test_loader
 
@@ -300,9 +300,8 @@ def kk_loader_train(root_path, batch_size, split_ratio=0.9, num_workers=4, trans
 
     print(f'训练集大小: {len(train_data)}, 验证集大小: {len(valid_data)}')
     # 生成训练集的验证集数据生成器
-    prefetch_factor = 2 if num_workers == 0 else num_workers * batch_size
-    train_iter = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers, prefetch_factor=prefetch_factor)
-    valid_iter = data.DataLoader(valid_data, batch_size=batch_size, shuffle=True, num_workers=num_workers, prefetch_factor=prefetch_factor)
+    train_iter = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    valid_iter = data.DataLoader(valid_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
     return train_iter, valid_iter
 

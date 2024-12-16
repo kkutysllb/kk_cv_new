@@ -182,12 +182,12 @@ class ResNet_V1(nn.Module):
 # 定义配置类
 class Config(object):
     def __init__(self): 
-        self.model_name = 'ResNet_V1_50'
+        self.model_name = 'ResNet_V1_152'
         self.dataset_name = "CIFAR10"
         self.num_epochs = 500
         self.lr = 0.001
-        self.batch_size = 256
-        self.device = get_device()
+        self.batch_size = 128
+        self.device = "cuda:0"
         self.in_channels = 3
         if self.dataset_name == "Food101":
             self.num_classes = 101
@@ -199,7 +199,7 @@ class Config(object):
             self.num_classes = 196
         else:
             self.num_classes = 10
-        self.patience = 1000
+        self.patience = 300
         self.save_path = os.path.join(root_dir, 'models', self.model_name)
         self.logs_path = os.path.join(root_dir, 'logs', self.model_name)
         os.makedirs(self.save_path, exist_ok=True)
@@ -240,14 +240,14 @@ if __name__ == "__main__":
 
 
     # 模型初始化
-    model_resnet = ResNet_V1(Bottleneck, [3, 4, 6, 3], num_classes=config.num_classes)
+    model_resnet = ResNet_V1(Bottleneck, [3, 8, 36, 3],num_classes=config.num_classes)
     # 损失函数、优化器、调度器
     criterion = kk_LabelSmoothingCrossEntropy()
-    optimizer = optim.SGD(model_resnet.parameters(), lr=config.lr, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
+    optimizer = optim.AdamW(model_resnet.parameters(), lr=config.lr, weight_decay=5e-4)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100, min_lr=1e-5)
 
     # 训练  
-    trainer = kk_ImageClassifierTrainer(config, model_resnet, criterion, optimizer, scheduler)
+    trainer = kk_ImageClassifierTrainer(config, model_resnet, criterion, optimizer, scheduler=None)
     trainer.train_iter(train_loader, test_loader)
     trainer.plot_training_curves(xaixs=range(1, len(trainer.train_losses) + 1))
 
